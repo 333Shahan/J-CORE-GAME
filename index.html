@@ -3,107 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>J-CORE | Game Hub</title>
+    <title>J-CORE | Heartbeat Hub</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap');
         
-        body { background: #121212; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        body { background: #0a0a0a; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; height: 100vh; overflow: hidden; }
 
-        /* --- LOGIN SCREEN --- */
+        /* --- ONLINE STATUS BADGE --- */
+        .status-container { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 50px; margin: 10px auto; width: fit-content; border: 1px solid rgba(0, 255, 204, 0.3); }
+        .status-dot { width: 10px; height: 10px; background: #888; border-radius: 50%; transition: 0.5s; }
+        .status-dot.online { background: #00ffcc; box-shadow: 0 0 10px #00ffcc; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .status-text { font-size: 0.7rem; letter-spacing: 1px; color: #00ffcc; text-transform: uppercase; }
+
+        /* --- HUB INTERFACE --- */
+        #main-hub { display: none; flex-direction: column; height: 100%; }
+        .header { padding: 20px; text-align: center; background: #1a1a1a; border-bottom: 2px solid #333; position: relative; }
+        .header h1 { margin: 0; font-size: 1.5rem; background: linear-gradient(to right, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* Chat Area */
+        .chat-area { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; justify-content: flex-end; background: radial-gradient(circle at center, #1a1a1a 0%, #050010 100%); }
+        .bubble { background: #ff0055; padding: 12px 18px; border-radius: 20px; border-bottom-left-radius: 2px; margin-bottom: 10px; max-width: 80%; border: 2px solid #fff; font-size: 0.9rem; position: relative; }
+
+        /* Game Card (Pool) */
+        .game-menu { background: #1f1f1f; padding: 20px; border-top-left-radius: 30px; border-top-right-radius: 30px; box-shadow: 0 -10px 30px rgba(0,0,0,0.5); }
+        .pool-card { background: url('https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=400&q=80'); background-size: cover; height: 140px; border-radius: 20px; display: flex; align-items: flex-end; padding: 20px; border: 3px solid #00ffcc; cursor: pointer; position: relative; overflow: hidden; }
+        .pool-card::after { content: "PLAY NOW"; position: absolute; top: 15px; right: 15px; background: #00ffcc; color: #000; font-size: 10px; font-weight: 900; padding: 5px 10px; border-radius: 10px; }
+
+        /* Login Overlay */
         #login-overlay { position: fixed; inset: 0; background: #050010; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .login-box { background: rgba(20,20,20,0.9); padding: 30px; border-radius: 20px; text-align: center; border: 2px solid #ff00a0; box-shadow: 0 0 20px rgba(255,0,160,0.4); }
-        input { background: #000; border: 1px solid #444; color: #fff; padding: 15px; width: 80%; margin: 10px 0; border-radius: 10px; text-align: center; }
-        .btn-glow { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: white; padding: 15px 30px; border-radius: 50px; font-weight: 900; cursor: pointer; width: 100%; margin-top: 10px; }
-
-        /* --- MAIN HUB (Like your screenshot) --- */
-        #main-hub { display: none; flex-direction: column; height: 100%; background: #0a0a0a; }
-        
-        /* Top Header / Chat Area */
-        .hub-header { padding: 20px; text-align: center; background: #1a1a1a; border-bottom: 2px solid #333; }
-        .hub-header h1 { margin: 0; font-size: 1.5rem; background: linear-gradient(to right, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        .chat-placeholder { flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; background: url('https://www.transparenttextures.com/patterns/stardust.png'); }
-        .message { background: linear-gradient(45deg, #990000, #ff0000); padding: 10px 15px; border-radius: 15px; border-bottom-left-radius: 0; max-width: 70%; margin-bottom: 10px; border: 2px solid white; font-size: 0.9rem; }
-
-        /* Game Grid Menu */
-        .game-menu { background: #1f1f1f; padding: 15px; border-top-left-radius: 20px; border-top-right-radius: 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; height: 35vh; overflow-y: auto; }
-        .game-card { background: #333; border-radius: 15px; height: 100px; display: flex; align-items: flex-end; padding: 10px; font-size: 1.1rem; font-weight: 900; background-size: cover; background-position: center; position: relative; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
-        .game-card.active { border-color: #00ffcc; box-shadow: 0 0 15px #00ffcc; background-image: linear-gradient(to top, rgba(0,0,0,0.8), transparent), url('https://images.unsplash.com/photo-1610024062279-d52f6345ec44?auto=format&fit=crop&w=300&q=80'); }
-        .game-card.locked { opacity: 0.5; cursor: not-allowed; background-image: linear-gradient(to top, rgba(0,0,0,0.8), transparent); }
-        .game-card span { z-index: 2; }
-
-        /* --- LUDO GAME SCREEN --- */
-        #ludo-screen { display: none; position: fixed; inset: 0; background: #050010; z-index: 50; flex-direction: column; align-items: center; justify-content: center; }
-        .back-btn { position: absolute; top: 20px; left: 20px; background: #333; padding: 10px 20px; border-radius: 20px; cursor: pointer; border: 1px solid #555; }
-        
-        .ludo-board { width: 300px; height: 300px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); background: #111; border: 4px solid #fff; box-shadow: 0 0 20px #ff00a0; }
-        .zone { border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
-        .zone-j { background: rgba(0, 255, 204, 0.3); color: #00ffcc; }
-        .zone-m { background: rgba(255, 0, 160, 0.3); color: #ff00a0; }
-        
-        .dice-controls { margin-top: 30px; text-align: center; }
-        #dice-val { font-size: 4rem; display: block; margin-bottom: 10px; text-shadow: 0 0 15px #00ffcc; }
-        .roll-btn { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: white; padding: 15px 40px; border-radius: 50px; font-weight: 900; font-size: 1.2rem; transition: 0.2s; }
-        .roll-btn:disabled { background: #333; color: #777; box-shadow: none; transform: scale(0.95); }
+        .login-card { background: #111; padding: 40px; border-radius: 25px; border: 2px solid #ff00a0; text-align: center; }
+        input { background: #000; border: 1px solid #333; color: #fff; padding: 15px; margin: 10px 0; width: 250px; border-radius: 12px; text-align: center; }
+        .btn { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: #fff; padding: 15px 40px; border-radius: 50px; font-weight: 900; cursor: pointer; width: 100%; box-shadow: 0 5px 15px rgba(255,0,160,0.3); }
     </style>
 </head>
 <body>
 
     <div id="login-overlay">
-        <div class="login-box">
-            <h1 style="margin: 0; color: #ff00a0;">J-CORE</h1>
-            <p style="font-size: 10px; color: #00ffcc; letter-spacing: 2px;">SECURE CONNECTION</p>
-            <input type="email" id="email" placeholder="EMAIL">
-            <input type="password" id="pass" placeholder="PASSWORD">
-            <button class="btn-glow" onclick="login()">ENTER HUB</button>
+        <div class="login-card">
+            <h1 style="color: #ff00a0; margin: 0;">J-CORE</h1>
+            <p style="font-size: 10px; color: #00ffcc; letter-spacing: 3px; margin-bottom: 20px;">ACCESSING ARENA...</p>
+            <input type="email" id="email" placeholder="YOUR EMAIL">
+            <input type="password" id="pass" placeholder="SECRET KEY">
+            <button class="btn" onclick="login()">ENTER ARENA</button>
         </div>
     </div>
 
     <div id="main-hub">
-        <div class="hub-header">
+        <div class="header">
             <h1>J-CORE HUB</h1>
-            <span style="font-size: 10px; color: #888;">Online - 2 Players Connected</span>
+            <div class="status-container">
+                <div id="status-dot" class="status-dot"></div>
+                <div id="status-text" class="status-text">Detecting Partner...</div>
+            </div>
         </div>
-        
-        <div class="chat-placeholder">
-            <div class="message">Welcome to the private server ✨</div>
-            <div class="message">Select a game below 👇</div>
+
+        <div class="chat-area">
+            <div class="bubble">Welcome back, Boss! 🎱</div>
+            <div class="bubble" style="background: #009688;">Maheen's cue is waiting... 😜</div>
         </div>
 
         <div class="game-menu">
-            <div class="game-card active" onclick="openLudo()">
-                <span>Neon Ludo 🎲</span>
+            <div class="pool-card" onclick="alert('Pool Game Loading...')">
+                <span style="font-weight: 900; text-shadow: 0 2px 10px #000; font-size: 1.2rem;">8-BALL POOL 🎱</span>
             </div>
-            <div class="game-card locked" style="background-color: #1a5276;">
-                <span>Pool 🎱 (Soon)</span>
-            </div>
-            <div class="game-card locked" style="background-color: #6e2c00;">
-                <span>Carrom 🎯 (Soon)</span>
-            </div>
-            <div class="game-card locked" style="background-color: #117a65;">
-                <span>Uno 🃏 (Soon)</span>
-            </div>
-        </div>
-    </div>
-
-    <div id="ludo-screen">
-        <div class="back-btn" onclick="closeLudo()">⬅ BACK TO HUB</div>
-        
-        <h2 style="color: #fff; text-shadow: 0 0 10px #ff00a0;">NEON LUDO</h2>
-        <div id="turn-status" style="margin-bottom: 15px; color: #00ffcc;">Connecting...</div>
-
-        <div class="ludo-board">
-            <div class="zone zone-j">J</div><div class="zone">🎲</div><div class="zone zone-m">M</div>
-            <div class="zone">✨</div><div class="zone" style="font-size: 2rem;">💖</div><div class="zone">✨</div>
-            <div class="zone zone-m">M</div><div class="zone">🎲</div><div class="zone zone-j">J</div>
-        </div>
-
-        <div class="dice-controls">
-            <span id="dice-val">🎲</span>
-            <button id="rollBtn" class="roll-btn" onclick="rollDice()">ROLL DICE</button>
         </div>
     </div>
 
@@ -122,73 +88,45 @@
         const auth = firebase.auth();
 
         let myEmail = "";
-        const btn = document.getElementById('rollBtn');
-        const statusText = document.getElementById('turn-status');
+        const partnerEmail = "333shahan@gmail.com"; 
 
         function login() {
             const e = document.getElementById('email').value;
             const p = document.getElementById('pass').value;
-            auth.signInWithEmailAndPassword(e, p).then((userCredential) => {
-                myEmail = userCredential.user.email;
+            auth.signInWithEmailAndPassword(e, p).then((user) => {
+                myEmail = user.user.email;
                 document.getElementById('login-overlay').style.display = 'none';
                 document.getElementById('main-hub').style.display = 'flex';
-                syncGame();
-            }).catch(a => alert("Error: " + a.message));
+                setupPresence();
+            }).catch(a => alert(a.message));
         }
 
-        function openLudo() {
-            document.getElementById('main-hub').style.display = 'none';
-            document.getElementById('ludo-screen').style.display = 'flex';
-        }
+        // --- THE ONLINE DETECTION SYSTEM ---
+        function setupPresence() {
+            const myStatusRef = db.ref('/status/' + myEmail.replace(/\./g, '_'));
+            const partnerStatusRef = db.ref('/status/' + partnerEmail.replace(/\./g, '_'));
 
-        function closeLudo() {
-            document.getElementById('ludo-screen').style.display = 'none';
-            document.getElementById('main-hub').style.display = 'flex';
-        }
-
-        // --- THE FIX FOR MULTIPLE CLICKS ---
-        function syncGame() {
-            db.ref('ludo').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if(!data) {
-                    // Initialize first turn if empty
-                    db.ref('ludo').set({ dice: 1, nextTurn: myEmail });
-                    return;
-                }
-
-                document.getElementById('dice-val').innerText = ['⚀','⚁','⚂','⚃','⚄','⚅'][data.dice-1] || '🎲';
-
-                // Strictly lock the button if it's not your turn
-                if(data.nextTurn !== myEmail) {
-                    btn.disabled = true;
-                    btn.innerText = "WAITING FOR MAHEEN...";
-                    statusText.innerText = "Her Turn ⏳";
-                    statusText.style.color = "#ff00a0";
-                } else {
-                    btn.disabled = false;
-                    btn.innerText = "YOUR TURN - ROLL!";
-                    statusText.innerText = "Your Turn 🔥";
-                    statusText.style.color = "#00ffcc";
-                }
+            // Set my status to online when connected, offline when I leave
+            db.ref('.info/connected').on('value', (snapshot) => {
+                if (snapshot.val() === false) return;
+                myStatusRef.onDisconnect().set('offline').then(() => {
+                    myStatusRef.set('online');
+                });
             });
-        }
 
-        function rollDice() {
-            // 1. INSTANTLY LOCK BUTTON LOCALLY SO YOU CAN'T DOUBLE CLICK
-            btn.disabled = true;
-            btn.innerText = "ROLLING...";
-
-            const r = Math.floor(Math.random() * 6) + 1;
-            const partnerEmail = "333shahan@gmail.com"; 
-            
-            // 2. ONLY CHANGE TURN IF IT'S NOT A 6
-            let nextPlayer = (r === 6) ? myEmail : partnerEmail;
-
-            // 3. SEND TO DATABASE
-            db.ref('ludo').update({ 
-                dice: r, 
-                lastRoller: myEmail,
-                nextTurn: nextPlayer 
+            // Listen for Partner's status
+            partnerStatusRef.on('value', (snapshot) => {
+                const status = snapshot.val();
+                const dot = document.getElementById('status-dot');
+                const text = document.getElementById('status-text');
+                
+                if (status === 'online') {
+                    dot.classList.add('online');
+                    text.innerText = "MAHEEN IS ONLINE 💖";
+                } else {
+                    dot.classList.remove('online');
+                    text.innerText = "MAHEEN IS AWAY 🌙";
+                }
             });
         }
     </script>
