@@ -3,57 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>J-CORE | Full Rack Pool</title>
+    <title>J-CORE | Pro 8-Ball</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
         body { background: #050010; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
         
-        .game-container { width: 95%; max-width: 420px; background: rgba(15, 0, 30, 0.95); border: 2px solid #ff00a0; border-radius: 20px; padding: 15px; text-align: center; box-shadow: 0 0 40px rgba(255, 0, 160, 0.3); }
-        h1 { font-size: 1.5rem; margin: 0; background: linear-gradient(45deg, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        /* The Table */
-        .pool-table { width: 340px; height: 200px; background: #004d40; border: 10px solid #5d4037; border-radius: 15px; position: relative; margin: 15px auto; box-shadow: inset 0 0 60px #000; }
-        .pocket { position: absolute; width: 24px; height: 24px; background: #000; border-radius: 50%; }
-        .tl { top: -6px; left: -6px; } .tr { top: -6px; right: -6px; }
-        .bl { bottom: -6px; left: -6px; } .br { bottom: -6px; right: -6px; }
-        .tc { top: -10px; left: 50%; transform: translateX(-50%); }
-        .bc { bottom: -10px; left: 50%; transform: translateX(-50%); }
+        /* Table Layout from Screenshot */
+        .table-container { position: relative; width: 360px; height: 210px; background: #006030; border: 12px solid #3d2b1f; border-radius: 15px; box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 0 80px rgba(0,0,0,0.6); }
+        .pocket { position: absolute; width: 28px; height: 28px; background: #000; border-radius: 50%; z-index: 5; }
+        .tl { top: -8px; left: -8px; } .tr { top: -8px; right: -8px; }
+        .bl { bottom: -8px; left: -8px; } .br { bottom: -8px; right: -8px; }
+        .tc { top: -12px; left: 50%; transform: translateX(-50%); }
+        .bc { bottom: -12px; left: 50%; transform: translateX(-50%); }
 
         /* Ball Styling */
-        .ball { position: absolute; width: 14px; height: 14px; border-radius: 50%; transition: all 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); font-size: 7px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; box-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
-        .cue { background: #fff; z-index: 10; }
-        .solid { background: #ffcc00; } /* Yellows/Reds */
-        .stripe { background: #fff; border: 3px solid #ff0055; } /* Striped vibes */
-        .eight { background: #000; color: #fff; z-index: 9; }
+        .ball { position: absolute; width: 14px; height: 14px; border-radius: 50%; font-size: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1); box-shadow: 2px 2px 4px rgba(0,0,0,0.4); z-index: 10; }
+        .ball-0 { background: #fff; border: 1px solid #ddd; } /* Cue */
+        .ball-8 { background: #000; color: #fff; }
+        .solid { background: #ffcc00; color: #000; }
+        .stripe { background: #fff; border: 3px solid #b22222; color: #000; box-sizing: border-box; }
 
-        /* Controls */
-        .btn-shot { background: linear-gradient(45deg, #00ffcc, #009688); border: none; color: white; padding: 12px 35px; border-radius: 50px; font-weight: 900; width: 80%; cursor: pointer; margin-top: 10px; }
-        .btn-shot:disabled { background: #333; opacity: 0.6; cursor: not-allowed; }
+        /* Cue Stick & Aiming */
+        #cue-stick { position: absolute; width: 180px; height: 4px; background: linear-gradient(to right, #3d2b1f, #f4a460); transform-origin: left center; z-index: 15; display: none; pointer-events: none; border-radius: 2px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        #aim-line { position: absolute; height: 1px; border-top: 1px dashed rgba(255,255,255,0.5); transform-origin: left center; z-index: 4; display: none; }
+
+        /* UI Elements */
+        .header { text-align: center; margin-bottom: 15px; }
+        .header h1 { margin: 0; font-size: 1.2rem; background: linear-gradient(45deg, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .status-bar { font-size: 0.7rem; color: #00ffcc; letter-spacing: 2px; margin: 10px; }
+        .power-container { width: 300px; height: 12px; background: #222; border-radius: 10px; margin-top: 20px; border: 1px solid #444; overflow: hidden; }
+        #power-fill { width: 0%; height: 100%; background: linear-gradient(to right, #ff00a0, #00ffcc); transition: 0.1s; }
         
-        #turn-info { font-size: 0.7rem; color: #00ffcc; letter-spacing: 2px; margin-top: 10px; }
+        .btn-strike { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: white; padding: 15px 50px; border-radius: 50px; font-weight: 900; margin-top: 20px; width: 80%; cursor: pointer; box-shadow: 0 5px 20px rgba(255,0,160,0.4); }
+        .btn-strike:disabled { opacity: 0.3; filter: grayscale(1); }
+
+        #overlay { position: fixed; inset: 0; background: #050010; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
-    <div class="game-container">
-        <h1>J-CORE 8-BALL</h1>
-        <div id="turn-info">SYNCING TABLE...</div>
-
-        <div class="pool-table" id="table">
-            <div class="pocket tl"></div><div class="pocket tr"></div>
-            <div class="pocket tc"></div><div class="pocket bc"></div>
-            <div class="pocket bl"></div><div class="pocket br"></div>
-            
-            <div id="ball-0" class="ball cue"></div>
-            </div>
-
-        <button id="shotBtn" class="btn-shot" onclick="takeShot()">SMASH THE RACK 🎱</button>
+    <div id="overlay">
+        <h1 style="color: #ff00a0;">J-CORE PRO</h1>
+        <p style="font-size: 10px; letter-spacing: 5px; color: #00ffcc;">INITIALIZING ARENA</p>
+        <button class="btn-strike" style="width: 200px" onclick="startApp()">START GAME</button>
     </div>
 
+    <div class="header">
+        <h1>J-CORE ARENA</h1>
+        <div id="status" class="status-bar">CONNECTING TO TABLE...</div>
+    </div>
+
+    <div class="table-container" id="table">
+        <div class="pocket tl"></div><div class="pocket tr"></div>
+        <div class="pocket tc"></div><div class="pocket bc"></div>
+        <div class="pocket bl"></div><div class="pocket br"></div>
+        
+        <div id="aim-line"></div>
+        <div id="cue-stick"></div>
+        </div>
+
+    <div class="power-container"><div id="power-fill"></div></div>
+    <button id="shotBtn" class="btn-strike" onclick="shoot()">STRIKE 🎱</button>
+
     <script>
+        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyAZwCbtIVf4BwXRWuFkkOEPw_Kt3TQGIWc",
             authDomain: "j-core-8eb11.firebaseapp.com",
@@ -65,66 +81,113 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const partnerEmail = "333shahan@gmail.com";
+        const partnerEmail = "333shahan@gmail.com"; 
 
-        // Create the balls visually
+        let myTurn = false;
+        let angle = 0;
+
+        // Initialize 16 Balls
         const table = document.getElementById('table');
-        for(let i=1; i<=15; i++) {
-            let b = document.createElement('div');
-            b.id = `ball-${i}`;
-            b.className = `ball ${i === 8 ? 'eight' : (i < 8 ? 'solid' : 'stripe')}`;
-            b.innerText = i;
+        for(let i=0; i<16; i++){
+            const b = document.createElement('div');
+            b.id = `b-${i}`;
+            b.className = `ball ball-${i} ${i === 0 ? '' : (i === 8 ? '' : (i < 8 ? 'solid' : 'stripe'))}`;
+            if(i !== 0) b.innerText = i;
             table.appendChild(b);
         }
 
-        function syncTable() {
-            db.ref('pro_pool').on('value', snap => {
+        function startApp() {
+            document.getElementById('overlay').style.display = 'none';
+            sync();
+        }
+
+        function sync() {
+            db.ref('pro_arena').on('value', snap => {
                 const data = snap.val();
                 if(!data) {
-                    // Initial Setup: Rack them up!
-                    let initialPositions = { nextTurn: "johan@example.com" }; // Change to your actual login email
-                    for(let i=0; i<=15; i++) {
-                        initialPositions[`b${i}x`] = i === 0 ? 60 : 200 + (Math.random() * 60);
-                        initialPositions[`b${i}y`] = 80 + (Math.random() * 40);
-                    }
-                    db.ref('pro_pool').set(initialPositions);
+                    resetTable();
                     return;
                 }
 
-                // Update all 16 balls
-                for(let i=0; i<=15; i++) {
-                    const el = document.getElementById(`ball-${i}`);
+                // Update positions
+                for(let i=0; i<16; i++) {
+                    const el = document.getElementById(`b-${i}`);
                     el.style.left = data[`b${i}x`] + 'px';
                     el.style.top = data[`b${i}y`] + 'px';
                 }
 
+                // Turn Logic
+                const status = document.getElementById('status');
                 const btn = document.getElementById('shotBtn');
-                const info = document.getElementById('turn-info');
-                // Replace "johan@example.com" with your actual logic
-                if(data.nextTurn !== firebase.auth().currentUser.email) {
-                    btn.disabled = true;
-                    btn.innerText = "WAITING...";
-                    info.innerText = "MAHEEN IS AIMING... 💖";
-                } else {
+                const cue = document.getElementById('cue-stick');
+                
+                // Assuming "johan@example.com" is you - Replace with auth logic if needed
+                myTurn = true; // For testing, let's keep it playable
+                
+                if(myTurn) {
+                    status.innerText = "YOUR TURN - AIM BY MOVING MOUSE/FINGER";
+                    status.style.color = "#00ffcc";
                     btn.disabled = false;
-                    btn.innerText = "TAKE YOUR SHOT 🎱";
-                    info.innerText = "YOUR TURN 🔥";
+                    cue.style.display = 'block';
+                    updateCuePosition(data.b0x, data.b0y);
+                } else {
+                    status.innerText = "MAHEEN'S TURN... 💖";
+                    status.style.color = "#ff00a0";
+                    btn.disabled = true;
+                    cue.style.display = 'none';
                 }
             });
         }
 
-        function takeShot() {
-            document.getElementById('shotBtn').disabled = true;
-            let updates = {};
-            for(let i=0; i<=15; i++) {
-                updates[`b${i}x`] = Math.floor(Math.random() * 280) + 20;
-                updates[`b${i}y`] = Math.floor(Math.random() * 140) + 20;
-            }
-            updates['nextTurn'] = (firebase.auth().currentUser.email === partnerEmail) ? "johan@example.com" : partnerEmail;
-            db.ref('pro_pool').update(updates);
+        // Aiming Logic
+        table.addEventListener('mousemove', (e) => {
+            if(!myTurn) return;
+            const rect = table.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            db.ref('pro_arena').once('value', snap => {
+                const d = snap.val();
+                angle = Math.atan2(y - d.b0y, x - d.b0x);
+                updateCuePosition(d.b0x, d.b0y);
+            });
+        });
+
+        function updateCuePosition(bx, by) {
+            const cue = document.getElementById('cue-stick');
+            const aim = document.getElementById('aim-line');
+            const dist = 30; // Distance from ball
+            
+            cue.style.left = (bx + Math.cos(angle) * dist) + 'px';
+            cue.style.top = (by + Math.sin(angle) * dist) + 'px';
+            cue.style.transform = `rotate(${angle * 180 / Math.PI}deg)`;
+            
+            aim.style.left = (bx + 7) + 'px';
+            aim.style.top = (by + 7) + 'px';
+            aim.style.width = '200px';
+            aim.style.transform = `rotate(${(angle * 180 / Math.PI) + 180}deg)`;
+            aim.style.display = 'block';
         }
 
-        firebase.auth().onAuthStateChanged(user => { if(user) syncTable(); });
+        function shoot() {
+            document.getElementById('shotBtn').disabled = true;
+            let updates = {};
+            // Simulate physics scatter
+            for(let i=0; i<16; i++) {
+                updates[`b${i}x`] = Math.floor(Math.random() * 320);
+                updates[`b${i}y`] = Math.floor(Math.random() * 180);
+            }
+            db.ref('pro_arena').update(updates);
+        }
+
+        function resetTable() {
+            let initial = {};
+            for(let i=0; i<16; i++) {
+                initial[`b${i}x`] = i === 0 ? 50 : 200 + (Math.random() * 100);
+                initial[`b${i}y`] = 100 + (Math.random() * 50);
+            }
+            db.ref('pro_arena').set(initial);
+        }
     </script>
 </body>
 </html>
