@@ -125,14 +125,14 @@
     </div>
 
     <script>
-        // --- 🚨 CRITICAL STEP: REPLACE THESE WITH YOUR REAL FIREBASE KEYS 🚨 ---
+        // --- ✅ KEYS UPDATED BY GEMINI ✅ ---
         const firebaseConfig = {
-            apiKey: "PASTE_YOUR_API_KEY_HERE",
-            authDomain: "PASTE_YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "PASTE_YOUR_PROJECT_ID",
-            storageBucket: "PASTE_YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "PASTE_YOUR_SENDER_ID",
-            appId: "PASTE_YOUR_APP_ID"
+            apiKey: "AIzaSyAZwCbtIVf4BwXRWuFkkOEPw_Kt3TQGIWc",
+            authDomain: "j-core-8eb11.firebaseapp.com",
+            projectId: "j-core-8eb11",
+            storageBucket: "j-core-8eb11.firebasestorage.app",
+            messagingSenderId: "213735832160",
+            appId: "1:213735832160:web:a86c2ecc7c5f3f13796105"
         };
 
         // Initialize Firebase
@@ -144,12 +144,9 @@
             const msg = document.getElementById('status-msg');
             const card = document.querySelector('.card');
 
-            // Funny validation check
             if(email === "" || pass === "") {
                 msg.innerText = "ERROR: I CAN'T READ MINDS! FILL IT OUT 🥺";
                 msg.style.color = "#ff4444";
-                
-                // Make the box physically shake if she doesn't type anything!
                 card.style.transform = "translateX(10px)";
                 setTimeout(() => card.style.transform = "translateX(-10px)", 100);
                 setTimeout(() => card.style.transform = "translateX(0)", 200);
@@ -159,14 +156,12 @@
             msg.innerText = "CHECKING IF YOU ARE CUTE ENOUGH... 🤔💖";
             msg.style.color = "#fff";
 
-            // The Real Firebase Sign-Up Logic
             firebase.auth().createUserWithEmailAndPassword(email, pass)
                 .then((userCredential) => {
-                    msg.innerText = "ACCESS GRANTED! WELCOME TO OUR WORLD. 🥰";
+                    msg.innerText = "ACCESS GRANTED! THE NETWORK IS NOW OURS. 🥰";
                     msg.style.color = "#00ffcc";
                 })
                 .catch((error) => {
-                    // Custom funny error for duplicate accounts
                     if(error.code === 'auth/email-already-in-use') {
                         msg.innerText = "YOU ALREADY LIVE IN MY HEART (AND DATABASE) 😂";
                     } else {
@@ -177,5 +172,4 @@
         }
     </script>
 </body>
-                                                                             </html>
-                                                                             
+</html>
