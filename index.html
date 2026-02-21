@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>J-CORE | Romantic Arena</title>
+    <title>J-CORE | Full Neon Ludo</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -12,32 +12,42 @@
         
         body { background: #050010; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
 
-        /* Neon Background Elements */
-        .bg-glow { position: fixed; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,0,160,0.2) 0%, transparent 70%); z-index: -1; filter: blur(50px); }
+        /* Romantic Background */
+        .bg-glow { position: fixed; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,0,160,0.15) 0%, transparent 70%); z-index: -1; filter: blur(50px); }
         .heart { position: absolute; color: #ff00a0; opacity: 0.3; animation: floatUp 6s infinite linear; pointer-events: none; }
         @keyframes floatUp { 0% { transform: translateY(110vh) scale(0.5); opacity: 0; } 50% { opacity: 0.6; } 100% { transform: translateY(-10vh) scale(1.2); opacity: 0; } }
 
-        /* The Hub Card */
-        .main-container { width: 90%; max-width: 420px; background: rgba(10, 0, 20, 0.9); border: 3px solid transparent; border-image: linear-gradient(45deg, #00ffcc, #ff00a0) 1; border-radius: 20px; padding: 20px; text-align: center; box-shadow: 0 0 30px rgba(255, 0, 160, 0.4); z-index: 10; }
+        /* Main UI */
+        .main-container { width: 95%; max-width: 400px; background: rgba(10, 0, 20, 0.9); border: 2px solid transparent; border-image: linear-gradient(45deg, #00ffcc, #ff00a0) 1; border-radius: 15px; padding: 15px; text-align: center; box-shadow: 0 0 25px rgba(255, 0, 160, 0.3); z-index: 10; display: none; }
         
-        h1 { font-size: 2.2rem; background: linear-gradient(to right, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 5px 0; }
-        .subtitle { font-size: 0.6rem; letter-spacing: 2px; color: #00ffcc; margin-bottom: 20px; }
+        h1 { font-size: 1.8rem; background: linear-gradient(to right, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
+        .subtitle { font-size: 0.6rem; letter-spacing: 2px; color: #00ffcc; margin-bottom: 10px; }
+        .referee-text { font-size: 0.8rem; color: #fff; min-height: 20px; margin-bottom: 10px; text-shadow: 0 0 5px #fff; }
 
-        /* RGB Ludo Board Overlay */
-        .ludo-frame { position: relative; width: 300px; height: 300px; margin: 0 auto; border: 4px solid #fff; box-shadow: 0 0 20px #ff00a0, inset 0 0 15px #00ffcc; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); background: #111; }
-        .zone { border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; position: relative; }
-        .zone-m { background: rgba(255, 0, 160, 0.3); color: #ff00a0; text-shadow: 0 0 10px #ff00a0; }
-        .zone-j { background: rgba(0, 255, 204, 0.3); color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
-        .center-heart { font-size: 2rem; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        /* The 15x15 Actual Ludo Board */
+        .board-wrapper { position: relative; width: 320px; height: 320px; margin: 0 auto; border: 3px solid #fff; box-shadow: 0 0 20px #ff00a0, inset 0 0 10px #00ffcc; background: #111; border-radius: 8px; overflow: hidden; }
+        #ludo-grid { display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr); width: 100%; height: 100%; }
+        .cell { border: 0.5px solid rgba(255,255,255,0.05); box-sizing: border-box; }
+        
+        /* Base Colors */
+        .base-j { background: rgba(0, 255, 204, 0.15); border: 2px solid #00ffcc; }
+        .base-m { background: rgba(255, 0, 160, 0.15); border: 2px solid #ff00a0; }
+        .path-j { background: rgba(0, 255, 204, 0.4); }
+        .path-m { background: rgba(255, 0, 160, 0.4); }
+        .center-home { background: linear-gradient(45deg, #00ffcc, #ff00a0); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+
+        /* Tokens */
+        .token { position: absolute; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; transform: translate(-50%, -50%); transition: all 0.3s ease; box-shadow: 0 0 10px #fff; z-index: 5; }
+        .token-j { background: #00ffcc; }
+        .token-m { background: #ff00a0; }
 
         /* Controls */
-        .dice-area { margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
-        #dice-val { font-size: 3.5rem; display: block; margin-bottom: 10px; text-shadow: 0 0 15px #ff00a0; }
-        button { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: white; padding: 15px 30px; border-radius: 50px; font-weight: 900; box-shadow: 0 5px 15px rgba(255,0,160,0.4); cursor: pointer; width: 80%; }
+        .dice-area { margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
+        #dice-val { font-size: 3rem; display: block; margin-bottom: 5px; text-shadow: 0 0 15px #ff00a0; }
+        button { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: white; padding: 12px 25px; border-radius: 50px; font-weight: 900; box-shadow: 0 5px 15px rgba(255,0,160,0.4); cursor: pointer; width: 80%; transition: 0.3s; }
+        button:disabled { background: #333; color: #888; box-shadow: none; cursor: not-allowed; }
         
-        /* The requested "More Games" button */
-        .more-games { margin-top: 20px; display: inline-block; padding: 8px 20px; border: 1px solid #00ffcc; color: #00ffcc; font-size: 0.7rem; border-radius: 20px; text-transform: uppercase; animation: glow 2s infinite; }
+        .more-games { margin-top: 15px; display: inline-block; padding: 6px 15px; border: 1px solid #00ffcc; color: #00ffcc; font-size: 0.6rem; border-radius: 20px; animation: glow 2s infinite; }
         @keyframes glow { 0%, 100% { box-shadow: 0 0 5px #00ffcc; } 50% { box-shadow: 0 0 15px #00ffcc; } }
 
         #login-overlay { position: fixed; inset: 0; background: #050010; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -50,31 +60,31 @@
 
     <div id="login-overlay">
         <h1>J-CORE</h1>
-        <p class="subtitle">ENCRYPTED LOVE ACCESS</p>
+        <p class="subtitle">ENCRYPTED LUDO ACCESS</p>
         <input type="email" id="email" placeholder="IDENTITY (EMAIL)">
         <input type="password" id="pass" placeholder="KEY (PASSWORD)">
         <button onclick="login()">ACTIVATE PROTOCOL 🚀</button>
     </div>
 
-    <div class="main-container">
+    <div class="main-container" id="game-ui">
         <h1>J-CORE</h1>
         <p class="subtitle">OFFICIAL ROMANCE ARENA</p>
+        <div class="referee-text" id="referee">Waiting for the first roll... 👀</div>
         
-        <div class="ludo-frame">
-            <div class="zone zone-j">J</div><div class="zone">🎲</div><div class="zone zone-m">M</div>
-            <div class="zone">✨</div><div class="zone center-heart">💖</div><div class="zone">✨</div>
-            <div class="zone zone-m">M</div><div class="zone">🎲</div><div class="zone zone-j">J</div>
-        </div>
+        <div class="board-wrapper">
+            <div id="ludo-grid"></div>
+            </div>
 
         <div class="dice-area">
             <span id="dice-val">🎲</span>
-            <button onclick="rollDice()">ROLL FOR LOVE</button>
+            <button id="rollBtn" onclick="rollDice()">ROLL FOR LOVE</button>
         </div>
 
         <div class="more-games">MORE GAMES SOON... 🔒</div>
     </div>
 
     <script>
+        // --- FIREBASE SETUP ---
         const firebaseConfig = {
             apiKey: "AIzaSyAZwCbtIVf4BwXRWuFkkOEPw_Kt3TQGIWc",
             authDomain: "j-core-8eb11.firebaseapp.com",
@@ -85,29 +95,93 @@
             databaseURL: "https://j-core-8eb11-default-rtdb.firebaseio.com/"
         };
         firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
 
+        // --- BOARD GENERATION (The 15x15 Path Grid) ---
+        const grid = document.getElementById('ludo-grid');
+        for(let i=0; i<225; i++) {
+            let cell = document.createElement('div');
+            cell.className = 'cell';
+            let row = Math.floor(i / 15);
+            let col = i % 15;
+            
+            // J Home (Top Left) & M Home (Bottom Right)
+            if(row < 6 && col < 6) cell.classList.add('base-j');
+            if(row > 8 && col > 8) cell.classList.add('base-m');
+            
+            // Safe Paths (Simplified Coloring)
+            if(col === 7 && row > 0 && row < 6) cell.classList.add('path-j'); // J Home Run
+            if(col === 7 && row > 8 && row < 14) cell.classList.add('path-m'); // M Home Run
+            
+            // Center
+            if(row >= 6 && row <= 8 && col >= 6 && col <= 8) {
+                if(row === 7 && col === 7) { cell.classList.add('center-home'); cell.innerHTML = '💖'; }
+            }
+            grid.appendChild(cell);
+        }
+
+        // --- LOGIN LOGIC ---
         function login() {
             const e = document.getElementById('email').value;
             const p = document.getElementById('pass').value;
-            firebase.auth().signInWithEmailAndPassword(e, p).then(() => {
+            auth.signInWithEmailAndPassword(e, p).then(() => {
                 document.getElementById('login-overlay').style.display = 'none';
-                syncDice();
+                document.getElementById('game-ui').style.display = 'block';
+                syncGame();
             }).catch(a => alert("ACCESS DENIED: " + a.message));
         }
 
-        function syncDice() {
-            firebase.database().ref('ludo/dice').on('value', s => {
-                const v = s.val();
-                if(v) document.getElementById('dice-val').innerText = ['⚀','⚁','⚂','⚃','⚄','⚅'][v-1];
+        // --- GAME LOGIC (Sync, Turns, 6/1 Unlock) ---
+        function syncGame() {
+            db.ref('ludo').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if(!data) return;
+
+                // Update Dice Emoji
+                if(data.dice) {
+                    document.getElementById('dice-val').innerText = ['⚀','⚁','⚂','⚃','⚄','⚅'][data.dice-1];
+                }
+
+                const refText = document.getElementById('referee');
+                const btn = document.getElementById('rollBtn');
+
+                // Turn Locking & Cute Messages
+                if(data.nextTurn && data.nextTurn !== auth.currentUser.email) {
+                    btn.disabled = true;
+                    btn.innerText = "WAITING ON HER... 😴";
+                    refText.innerText = "It's the Queen's turn to roll! 👑";
+                } else {
+                    btn.disabled = false;
+                    btn.innerText = "ROLL FOR LOVE 🎲";
+                    
+                    if(data.dice === 1) {
+                        refText.innerText = "A 1! Slow and steady wins the heart. Token Unlocked! 🐢💖";
+                    } else if (data.dice === 6) {
+                        refText.innerText = "BOOM! A 6! A token breaks free! Fly like a romantic eagle! 🦅✨";
+                    } else if (data.dice > 1) {
+                        refText.innerText = `You rolled a ${data.dice}. Just waddling forward... 🐧`;
+                    } else {
+                        refText.innerText = "Your turn! Roll the dice to start! 🔥";
+                    }
+                }
             });
         }
 
         function rollDice() {
             const r = Math.floor(Math.random() * 6) + 1;
-            firebase.database().ref('ludo').update({ dice: r });
+            const myEmail = auth.currentUser.email;
+            const partnerEmail = "333shahan@gmail.com"; // Adjust logic later for actual 2 accounts
+            const nextTurn = (r === 6) ? myEmail : partnerEmail; // Rule: Roll 6 = Roll Again!
+
+            db.ref('ludo').update({ 
+                dice: r, 
+                lastRoller: myEmail,
+                nextTurn: nextTurn // If you roll a 6, you keep your turn!
+            });
         }
 
-        // Add floating hearts
+        // Floating Hearts Animation
         setInterval(() => {
             const h = document.createElement('div');
             h.innerHTML = '💖'; h.className = 'heart';
@@ -115,7 +189,7 @@
             h.style.animationDuration = (Math.random() * 3 + 3) + 's';
             document.body.appendChild(h);
             setTimeout(() => h.remove(), 6000);
-        }, 500);
+        }, 800);
     </script>
 </body>
 </html>
