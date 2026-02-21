@@ -3,172 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>J-CORE | Real Physics Pool</title>
+    <title>J-CORE | Pro 8-Ball</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
-        body { background: #050010; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        body { background: #050010; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; touch-action: none; }
         
         .header { text-align: center; margin-bottom: 10px; z-index: 10; }
         .header h1 { margin: 0; font-size: 1.2rem; background: linear-gradient(45deg, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        #game-canvas { border: 12px solid #3d2b1f; border-radius: 15px; box-shadow: 0 20px 50px rgba(0,0,0,0.9); cursor: crosshair; touch-action: none; }
-        
-        .ui-panel { margin-top: 15px; text-align: center; z-index: 10; width: 100%; }
-        #turn-msg { font-size: 0.8rem; letter-spacing: 2px; color: #00ffcc; margin-bottom: 10px; }
-        .inst { font-size: 10px; color: #888; margin-top: 5px; }
+
+        #container { position: relative; border: 12px solid #3d2b1f; border-radius: 15px; box-shadow: 0 20px 50px #000; width: 360px; height: 180px; background: #006030; }
+        canvas { position: absolute; top: 0; left: 0; border-radius: 5px; }
+
+        /* The Cue Stick */
+        #cue-stick {
+            position: absolute;
+            width: 200px;
+            height: 6px;
+            background: linear-gradient(to right, #3d2b1f 0%, #f4a460 80%, #fff 100%);
+            transform-origin: left center;
+            pointer-events: none;
+            display: none;
+            z-index: 20;
+            border-radius: 3px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+        }
+
+        .ui { margin-top: 15px; text-align: center; font-size: 10px; color: #00ffcc; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <h1>J-CORE PRO ARENA</h1>
-        <div id="turn-msg">LOADING PHYSICS ENGINE...</div>
     </div>
 
-    <canvas id="game-canvas"></canvas>
+    <div id="container">
+        <canvas id="poolCanvas"></canvas>
+        <div id="cue-stick"></div>
+    </div>
 
-    <div class="ui-panel">
-        <div class="inst">DRAG BACK FROM CUE BALL TO AIM & POWER UP</div>
-        <p style="font-size: 10px; color: #ff00a0;">💖 FOR MAHEEN & JOHAN 💖</p>
+    <div class="ui">
+        DRAG AROUND BALL TO AIM • PULL BACK TO POWER UP<br>
+        <span style="color: #ff00a0;">MAHEEN VS JOHAN 💖</span>
     </div>
 
     <script>
-        // --- FIREBASE ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyAZwCbtIVf4BwXRWuFkkOEPw_Kt3TQGIWc",
-            databaseURL: "https://j-core-8eb11-default-rtdb.firebaseio.com/"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        // --- MATTER.JS SETUP ---
-        const { Engine, Render, Runner, World, Bodies, Body, Events, Mouse, MouseConstraint, Vector } = Matter;
+        const { Engine, Render, Runner, World, Bodies, Body, Vector, Events } = Matter;
         const engine = Engine.create();
-        engine.world.gravity.y = 0; // Top-down view
+        engine.world.gravity.y = 0;
 
-        const canvas = document.getElementById('game-canvas');
-        const width = 360;
-        const height = 180;
-        
-        const render = Render.create({
-            canvas: canvas,
-            engine: engine,
-            options: {
-                width: width,
-                height: height,
-                background: '#006030', // Green Felt
-                wireframes: false
-            }
-        });
+        const canvas = document.getElementById('poolCanvas');
+        const ctx = canvas.getContext('2d');
+        const stick = document.getElementById('cue-stick');
+        const width = 360; const height = 180;
+        canvas.width = width; canvas.height = height;
 
-        // --- CREATE TABLE BOUNDARIES ---
-        const wallOptions = { isStatic: true, render: { fillStyle: '#3d2b1f' } };
+        // Table Walls
+        const wallOpt = { isStatic: true, render: { visible: false } };
         World.add(engine.world, [
-            Bodies.rectangle(width/2, -10, width, 20, wallOptions), // Top
-            Bodies.rectangle(width/2, height+10, width, 20, wallOptions), // Bottom
-            Bodies.rectangle(-10, height/2, 20, height, wallOptions), // Left
-            Bodies.rectangle(width+10, height/2, 20, height, wallOptions) // Right
+            Bodies.rectangle(width/2, -10, width, 20, wallOpt),
+            Bodies.rectangle(width/2, height+10, width, 20, wallOpt),
+            Bodies.rectangle(-10, height/2, 20, height, wallOpt),
+            Bodies.rectangle(width+10, height/2, 20, height, wallOpt)
         ]);
 
-        // --- CREATE BALLS ---
-        let balls = [];
-        const ballRadius = 8;
-        
-        function createBall(x, y, color, label, isCue = false) {
-            const ball = Bodies.circle(x, y, ballRadius, {
-                restitution: 0.9,
-                friction: 0.01,
-                frictionAir: 0.02,
-                render: { fillStyle: color },
-                label: label
-            });
-            ball.isCue = isCue;
-            return ball;
-        }
-
-        // Cue Ball
-        const cueBall = createBall(80, height/2, '#ffffff', 'cue', true);
+        // Balls
+        const balls = [];
+        const cueBall = Bodies.circle(100, height/2, 8, { restitution: 0.9, frictionAir: 0.015, render: { fillStyle: '#fff' } });
         balls.push(cueBall);
 
-        // Rack the other 15 balls in a triangle
-        let ballIdx = 1;
-        const startX = 240;
-        const startY = height/2;
-        for (let i = 0; i < 5; i++) {
-            for (let j = 0; j <= i; j++) {
-                const color = ballIdx === 8 ? '#000000' : (ballIdx < 8 ? '#ffcc00' : '#b22222');
-                balls.push(createBall(startX + (i * 15), (startY - (i * 8)) + (j * 16), color, ballIdx));
-                ballIdx++;
+        // Simple Rack
+        for(let i=0; i<3; i++) {
+            for(let j=0; j<=i; j++) {
+                balls.push(Bodies.circle(240 + (i*15), (height/2 - (i*8)) + (j*16), 8, { 
+                    restitution: 0.9, frictionAir: 0.015, 
+                    render: { fillStyle: (i+j)%2==0 ? '#ffcc00' : '#b22222' } 
+                }));
             }
         }
         World.add(engine.world, balls);
 
-        // --- AIMING & SHOOTING ---
-        let isDragging = false;
-        let startPoint = { x: 0, y: 0 };
+        let isAiming = false;
+        let angle = 0;
+        let power = 0;
 
-        canvas.addEventListener('mousedown', (e) => {
+        window.addEventListener('mousedown', (e) => { isAiming = true; });
+        window.addEventListener('mouseup', (e) => {
+            if(isAiming && power > 5) {
+                const force = { x: Math.cos(angle) * power * 0.0005, y: Math.sin(angle) * power * 0.0005 };
+                Body.applyForce(cueBall, cueBall.position, force);
+            }
+            isAiming = false;
+            power = 0;
+            stick.style.display = 'none';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if(!isAiming) return;
             const rect = canvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
-            
-            // Only allow drag if clicking near cue ball
+
+            angle = Math.atan2(cueBall.position.y - mouseY, cueBall.position.x - mouseX);
             const dist = Vector.magnitude(Vector.sub(cueBall.position, {x: mouseX, y: mouseY}));
-            if(dist < 30) {
-                isDragging = true;
-                startPoint = { x: mouseX, y: mouseY };
+            power = Math.min(dist, 150); // Max power cap
+
+            // Update Stick
+            stick.style.display = 'block';
+            stick.style.left = cueBall.position.x + 'px';
+            stick.style.top = cueBall.position.y + 'px';
+            stick.style.transform = `rotate(${angle}rad) translate(${-(power + 20)}px, -3px)`;
+        });
+
+        // Animation Loop
+        (function update() {
+            Engine.update(engine);
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw Guideline
+            if(isAiming) {
+                ctx.beginPath();
+                ctx.setLineDash([5, 5]);
+                ctx.moveTo(cueBall.position.x, cueBall.position.y);
+                ctx.lineTo(cueBall.position.x + Math.cos(angle) * 100, cueBall.position.y + Math.sin(angle) * 100);
+                ctx.strokeStyle = "rgba(255,255,255,0.3)";
+                ctx.stroke();
             }
-        });
 
-        canvas.addEventListener('mouseup', (e) => {
-            if(!isDragging) return;
-            const rect = canvas.getBoundingClientRect();
-            const endX = e.clientX - rect.left;
-            const endY = e.clientY - rect.top;
-
-            const force = Vector.sub(startPoint, {x: endX, y: endY});
-            const strength = 0.005; // Adjust for power
-            
-            Body.applyForce(cueBall, cueBall.position, {
-                x: force.x * strength,
-                y: force.y * strength
+            balls.forEach(b => {
+                ctx.beginPath();
+                ctx.arc(b.position.x, b.position.y, 8, 0, Math.PI*2);
+                ctx.fillStyle = b.render.fillStyle;
+                ctx.fill();
+                ctx.closePath();
             });
-
-            isDragging = false;
-            
-            // Sync to Firebase after the shot
-            setTimeout(syncToFirebase, 2000);
-        });
-
-        // --- FIREBASE SYNCING ---
-        function syncToFirebase() {
-            const positions = {};
-            balls.forEach((b, i) => {
-                positions[`b${i}x`] = b.position.x;
-                positions[`b${i}y`] = b.position.y;
-            });
-            db.ref('pool_physics').set(positions);
-        }
-
-        db.ref('pool_physics').on('value', snap => {
-            const data = snap.val();
-            if(!data) return;
-            balls.forEach((b, i) => {
-                if(data[`b${i}x`]) {
-                    Body.setPosition(b, { x: data[`b${i}x`], y: data[`b${i}y`] });
-                    Body.setVelocity(b, { x: 0, y: 0 });
-                }
-            });
-        });
-
-        Render.run(render);
-        const runner = Runner.create();
-        Runner.run(runner, engine);
-
-        document.getElementById('turn-msg').innerText = "YOUR TURN 🎱";
+            requestAnimationFrame(update);
+        })();
     </script>
 </body>
 </html>
