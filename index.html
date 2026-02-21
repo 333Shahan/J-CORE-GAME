@@ -3,75 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>J-CORE | 8-Ball Duel</title>
+    <title>J-CORE | Full Rack Pool</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap');
-        
         body { background: #050010; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        
+        .game-container { width: 95%; max-width: 420px; background: rgba(15, 0, 30, 0.95); border: 2px solid #ff00a0; border-radius: 20px; padding: 15px; text-align: center; box-shadow: 0 0 40px rgba(255, 0, 160, 0.3); }
+        h1 { font-size: 1.5rem; margin: 0; background: linear-gradient(45deg, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* The Table */
+        .pool-table { width: 340px; height: 200px; background: #004d40; border: 10px solid #5d4037; border-radius: 15px; position: relative; margin: 15px auto; box-shadow: inset 0 0 60px #000; }
+        .pocket { position: absolute; width: 24px; height: 24px; background: #000; border-radius: 50%; }
+        .tl { top: -6px; left: -6px; } .tr { top: -6px; right: -6px; }
+        .bl { bottom: -6px; left: -6px; } .br { bottom: -6px; right: -6px; }
+        .tc { top: -10px; left: 50%; transform: translateX(-50%); }
+        .bc { bottom: -10px; left: 50%; transform: translateX(-50%); }
 
-        /* Neon Romantic BG */
-        .bg-heart { position: fixed; color: #ff00a0; opacity: 0.2; animation: floatUp 5s infinite linear; z-index: -1; }
-        @keyframes floatUp { 0% { transform: translateY(110vh); } 100% { transform: translateY(-10vh); } }
-
-        /* The Hub Layout */
-        .game-container { width: 95%; max-width: 400px; background: rgba(15, 0, 30, 0.9); border: 2px solid #00ffcc; border-radius: 20px; padding: 20px; box-shadow: 0 0 30px rgba(0, 255, 204, 0.3); text-align: center; }
-        h1 { font-size: 1.8rem; margin: 0; background: linear-gradient(45deg, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .turn-indicator { font-size: 0.8rem; margin-bottom: 20px; color: #ff00a0; text-transform: uppercase; letter-spacing: 2px; }
-
-        /* Pool Table Design */
-        .pool-table { width: 320px; height: 180px; background: #004d40; border: 10px solid #5d4037; border-radius: 15px; position: relative; margin: 0 auto; box-shadow: inset 0 0 50px #000; overflow: hidden; }
-        .pocket { position: absolute; width: 22px; height: 22px; background: #000; border-radius: 50%; }
-        .tl { top: -5px; left: -5px; } .tr { top: -5px; right: -5px; }
-        .bl { bottom: -5px; left: -5px; } .br { bottom: -5px; right: -5px; }
-        .tc { top: -8px; left: 50%; transform: translateX(-50%); }
-        .bc { bottom: -8px; left: 50%; transform: translateX(-50%); }
-
-        /* Balls */
-        .ball { position: absolute; width: 16px; height: 16px; border-radius: 50%; transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
-        .cue-ball { background: #fff; top: 80px; left: 50px; }
-        .eight-ball { background: #000; border: 1px solid #444; color: #fff; font-size: 8px; display: flex; align-items: center; justify-content: center; top: 80px; left: 220px; }
+        /* Ball Styling */
+        .ball { position: absolute; width: 14px; height: 14px; border-radius: 50%; transition: all 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); font-size: 7px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; box-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+        .cue { background: #fff; z-index: 10; }
+        .solid { background: #ffcc00; } /* Yellows/Reds */
+        .stripe { background: #fff; border: 3px solid #ff0055; } /* Striped vibes */
+        .eight { background: #000; color: #fff; z-index: 9; }
 
         /* Controls */
-        .power-bar { width: 80%; height: 10px; background: #222; border-radius: 5px; margin: 25px auto; overflow: hidden; border: 1px solid #444; }
-        #power-fill { width: 0%; height: 100%; background: linear-gradient(to right, #00ffcc, #ff00a0); transition: 0.1s; }
+        .btn-shot { background: linear-gradient(45deg, #00ffcc, #009688); border: none; color: white; padding: 12px 35px; border-radius: 50px; font-weight: 900; width: 80%; cursor: pointer; margin-top: 10px; }
+        .btn-shot:disabled { background: #333; opacity: 0.6; cursor: not-allowed; }
         
-        .btn-shot { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: white; padding: 15px 40px; border-radius: 50px; font-weight: 900; width: 80%; cursor: pointer; text-transform: uppercase; box-shadow: 0 5px 15px rgba(255, 0, 160, 0.4); }
-        .btn-shot:disabled { background: #333; opacity: 0.5; box-shadow: none; }
-
-        #login-overlay { position: fixed; inset: 0; background: #050010; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input { background: #111; border: 1px solid #333; color: #fff; padding: 15px; width: 250px; margin: 10px; border-radius: 12px; text-align: center; }
+        #turn-info { font-size: 0.7rem; color: #00ffcc; letter-spacing: 2px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <div id="login-overlay">
-        <h1>J-CORE</h1>
-        <p style="font-size: 10px; color: #00ffcc; letter-spacing: 2px;">POOL ARENA ACCESS</p>
-        <input type="email" id="email" placeholder="EMAIL">
-        <input type="password" id="pass" placeholder="PASSWORD">
-        <button class="btn-shot" style="width: 280px;" onclick="login()">ENTER TABLE</button>
-    </div>
-
     <div class="game-container">
-        <h1>J-CORE POOL</h1>
-        <div id="turn-display" class="turn-indicator">Syncing...</div>
+        <h1>J-CORE 8-BALL</h1>
+        <div id="turn-info">SYNCING TABLE...</div>
 
-        <div class="pool-table">
+        <div class="pool-table" id="table">
             <div class="pocket tl"></div><div class="pocket tr"></div>
             <div class="pocket tc"></div><div class="pocket bc"></div>
             <div class="pocket bl"></div><div class="pocket br"></div>
             
-            <div id="cue-ball" class="ball cue-ball"></div>
-            <div id="eight-ball" class="ball eight-ball">8</div>
-        </div>
+            <div id="ball-0" class="ball cue"></div>
+            </div>
 
-        <div class="power-bar"><div id="power-fill"></div></div>
-
-        <button id="shotBtn" class="btn-shot" onclick="takeShot()">Take Shot 🎱</button>
-        <p style="font-size: 10px; margin-top: 15px; color: #888;">PASS & PLAY MODE ACTIVE</p>
+        <button id="shotBtn" class="btn-shot" onclick="takeShot()">SMASH THE RACK 🎱</button>
     </div>
 
     <script>
@@ -86,78 +65,66 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const auth = firebase.auth();
+        const partnerEmail = "333shahan@gmail.com";
 
-        let partnerEmail = "333shahan@gmail.com"; 
-
-        function login() {
-            const e = document.getElementById('email').value;
-            const p = document.getElementById('pass').value;
-            auth.signInWithEmailAndPassword(e, p).then(() => {
-                document.getElementById('login-overlay').style.display = 'none';
-                syncTable();
-            }).catch(a => alert(a.message));
+        // Create the balls visually
+        const table = document.getElementById('table');
+        for(let i=1; i<=15; i++) {
+            let b = document.createElement('div');
+            b.id = `ball-${i}`;
+            b.className = `ball ${i === 8 ? 'eight' : (i < 8 ? 'solid' : 'stripe')}`;
+            b.innerText = i;
+            table.appendChild(b);
         }
 
         function syncTable() {
-            db.ref('pool_match').on('value', (snap) => {
+            db.ref('pro_pool').on('value', snap => {
                 const data = snap.val();
                 if(!data) {
-                    // Initialize if empty
-                    db.ref('pool_match').set({ cueX: 50, cueY: 80, eightX: 220, eightY: 80, nextTurn: auth.currentUser.email });
+                    // Initial Setup: Rack them up!
+                    let initialPositions = { nextTurn: "johan@example.com" }; // Change to your actual login email
+                    for(let i=0; i<=15; i++) {
+                        initialPositions[`b${i}x`] = i === 0 ? 60 : 200 + (Math.random() * 60);
+                        initialPositions[`b${i}y`] = 80 + (Math.random() * 40);
+                    }
+                    db.ref('pro_pool').set(initialPositions);
                     return;
                 }
 
-                // Move balls
-                document.getElementById('cue-ball').style.left = data.cueX + 'px';
-                document.getElementById('cue-ball').style.top = data.cueY + 'px';
-                document.getElementById('eight-ball').style.left = data.eightX + 'px';
-                document.getElementById('eight-ball').style.top = data.eightY + 'px';
+                // Update all 16 balls
+                for(let i=0; i<=15; i++) {
+                    const el = document.getElementById(`ball-${i}`);
+                    el.style.left = data[`b${i}x`] + 'px';
+                    el.style.top = data[`b${i}y`] + 'px';
+                }
 
                 const btn = document.getElementById('shotBtn');
-                const turnTxt = document.getElementById('turn-display');
-
-                if(data.nextTurn !== auth.currentUser.email) {
+                const info = document.getElementById('turn-info');
+                // Replace "johan@example.com" with your actual logic
+                if(data.nextTurn !== firebase.auth().currentUser.email) {
                     btn.disabled = true;
-                    btn.innerText = "Waiting...";
-                    turnTxt.innerText = "MAHEEN'S TURN 💖";
-                    turnTxt.style.color = "#ff00a0";
+                    btn.innerText = "WAITING...";
+                    info.innerText = "MAHEEN IS AIMING... 💖";
                 } else {
                     btn.disabled = false;
                     btn.innerText = "TAKE YOUR SHOT 🎱";
-                    turnTxt.innerText = "YOUR TURN 🔥";
-                    turnTxt.style.color = "#00ffcc";
+                    info.innerText = "YOUR TURN 🔥";
                 }
             });
         }
 
         function takeShot() {
-            const btn = document.getElementById('shotBtn');
-            btn.disabled = true; // INSTANT LOCK
-
-            // Simulating a shot - generating new positions
-            const newCueX = Math.floor(Math.random() * 250) + 20;
-            const newCueY = Math.floor(Math.random() * 120) + 20;
-            const newEightX = Math.floor(Math.random() * 250) + 20;
-            const newEightY = Math.floor(Math.random() * 120) + 20;
-
-            db.ref('pool_match').update({
-                cueX: newCueX,
-                cueY: newCueY,
-                eightX: newEightX,
-                eightY: newEightY,
-                nextTurn: (auth.currentUser.email === partnerEmail) ? "your_email_here@gmail.com" : partnerEmail
-            });
+            document.getElementById('shotBtn').disabled = true;
+            let updates = {};
+            for(let i=0; i<=15; i++) {
+                updates[`b${i}x`] = Math.floor(Math.random() * 280) + 20;
+                updates[`b${i}y`] = Math.floor(Math.random() * 140) + 20;
+            }
+            updates['nextTurn'] = (firebase.auth().currentUser.email === partnerEmail) ? "johan@example.com" : partnerEmail;
+            db.ref('pro_pool').update(updates);
         }
 
-        // Floating Hearts
-        setInterval(() => {
-            const h = document.createElement('div');
-            h.innerHTML = '💖'; h.className = 'bg-heart';
-            h.style.left = Math.random() * 100 + 'vw';
-            document.body.appendChild(h);
-            setTimeout(() => h.remove(), 5000);
-        }, 1000);
+        firebase.auth().onAuthStateChanged(user => { if(user) syncTable(); });
     </script>
 </body>
 </html>
