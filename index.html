@@ -3,74 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>J-CORE | Heartbeat Hub</title>
+    <title>J-CORE | 8-Ball Duel</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap');
         
-        body { background: #0a0a0a; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; height: 100vh; overflow: hidden; }
+        body { background: #050010; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
 
-        /* --- ONLINE STATUS BADGE --- */
-        .status-container { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 50px; margin: 10px auto; width: fit-content; border: 1px solid rgba(0, 255, 204, 0.3); }
-        .status-dot { width: 10px; height: 10px; background: #888; border-radius: 50%; transition: 0.5s; }
-        .status-dot.online { background: #00ffcc; box-shadow: 0 0 10px #00ffcc; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-        .status-text { font-size: 0.7rem; letter-spacing: 1px; color: #00ffcc; text-transform: uppercase; }
+        /* Neon Romantic BG */
+        .bg-heart { position: fixed; color: #ff00a0; opacity: 0.2; animation: floatUp 5s infinite linear; z-index: -1; }
+        @keyframes floatUp { 0% { transform: translateY(110vh); } 100% { transform: translateY(-10vh); } }
 
-        /* --- HUB INTERFACE --- */
-        #main-hub { display: none; flex-direction: column; height: 100%; }
-        .header { padding: 20px; text-align: center; background: #1a1a1a; border-bottom: 2px solid #333; position: relative; }
-        .header h1 { margin: 0; font-size: 1.5rem; background: linear-gradient(to right, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        /* The Hub Layout */
+        .game-container { width: 95%; max-width: 400px; background: rgba(15, 0, 30, 0.9); border: 2px solid #00ffcc; border-radius: 20px; padding: 20px; box-shadow: 0 0 30px rgba(0, 255, 204, 0.3); text-align: center; }
+        h1 { font-size: 1.8rem; margin: 0; background: linear-gradient(45deg, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .turn-indicator { font-size: 0.8rem; margin-bottom: 20px; color: #ff00a0; text-transform: uppercase; letter-spacing: 2px; }
+
+        /* Pool Table Design */
+        .pool-table { width: 320px; height: 180px; background: #004d40; border: 10px solid #5d4037; border-radius: 15px; position: relative; margin: 0 auto; box-shadow: inset 0 0 50px #000; overflow: hidden; }
+        .pocket { position: absolute; width: 22px; height: 22px; background: #000; border-radius: 50%; }
+        .tl { top: -5px; left: -5px; } .tr { top: -5px; right: -5px; }
+        .bl { bottom: -5px; left: -5px; } .br { bottom: -5px; right: -5px; }
+        .tc { top: -8px; left: 50%; transform: translateX(-50%); }
+        .bc { bottom: -8px; left: 50%; transform: translateX(-50%); }
+
+        /* Balls */
+        .ball { position: absolute; width: 16px; height: 16px; border-radius: 50%; transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+        .cue-ball { background: #fff; top: 80px; left: 50px; }
+        .eight-ball { background: #000; border: 1px solid #444; color: #fff; font-size: 8px; display: flex; align-items: center; justify-content: center; top: 80px; left: 220px; }
+
+        /* Controls */
+        .power-bar { width: 80%; height: 10px; background: #222; border-radius: 5px; margin: 25px auto; overflow: hidden; border: 1px solid #444; }
+        #power-fill { width: 0%; height: 100%; background: linear-gradient(to right, #00ffcc, #ff00a0); transition: 0.1s; }
         
-        /* Chat Area */
-        .chat-area { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; justify-content: flex-end; background: radial-gradient(circle at center, #1a1a1a 0%, #050010 100%); }
-        .bubble { background: #ff0055; padding: 12px 18px; border-radius: 20px; border-bottom-left-radius: 2px; margin-bottom: 10px; max-width: 80%; border: 2px solid #fff; font-size: 0.9rem; position: relative; }
+        .btn-shot { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: white; padding: 15px 40px; border-radius: 50px; font-weight: 900; width: 80%; cursor: pointer; text-transform: uppercase; box-shadow: 0 5px 15px rgba(255, 0, 160, 0.4); }
+        .btn-shot:disabled { background: #333; opacity: 0.5; box-shadow: none; }
 
-        /* Game Card (Pool) */
-        .game-menu { background: #1f1f1f; padding: 20px; border-top-left-radius: 30px; border-top-right-radius: 30px; box-shadow: 0 -10px 30px rgba(0,0,0,0.5); }
-        .pool-card { background: url('https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=400&q=80'); background-size: cover; height: 140px; border-radius: 20px; display: flex; align-items: flex-end; padding: 20px; border: 3px solid #00ffcc; cursor: pointer; position: relative; overflow: hidden; }
-        .pool-card::after { content: "PLAY NOW"; position: absolute; top: 15px; right: 15px; background: #00ffcc; color: #000; font-size: 10px; font-weight: 900; padding: 5px 10px; border-radius: 10px; }
-
-        /* Login Overlay */
         #login-overlay { position: fixed; inset: 0; background: #050010; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .login-card { background: #111; padding: 40px; border-radius: 25px; border: 2px solid #ff00a0; text-align: center; }
-        input { background: #000; border: 1px solid #333; color: #fff; padding: 15px; margin: 10px 0; width: 250px; border-radius: 12px; text-align: center; }
-        .btn { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: #fff; padding: 15px 40px; border-radius: 50px; font-weight: 900; cursor: pointer; width: 100%; box-shadow: 0 5px 15px rgba(255,0,160,0.3); }
+        input { background: #111; border: 1px solid #333; color: #fff; padding: 15px; width: 250px; margin: 10px; border-radius: 12px; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="login-overlay">
-        <div class="login-card">
-            <h1 style="color: #ff00a0; margin: 0;">J-CORE</h1>
-            <p style="font-size: 10px; color: #00ffcc; letter-spacing: 3px; margin-bottom: 20px;">ACCESSING ARENA...</p>
-            <input type="email" id="email" placeholder="YOUR EMAIL">
-            <input type="password" id="pass" placeholder="SECRET KEY">
-            <button class="btn" onclick="login()">ENTER ARENA</button>
-        </div>
+        <h1>J-CORE</h1>
+        <p style="font-size: 10px; color: #00ffcc; letter-spacing: 2px;">POOL ARENA ACCESS</p>
+        <input type="email" id="email" placeholder="EMAIL">
+        <input type="password" id="pass" placeholder="PASSWORD">
+        <button class="btn-shot" style="width: 280px;" onclick="login()">ENTER TABLE</button>
     </div>
 
-    <div id="main-hub">
-        <div class="header">
-            <h1>J-CORE HUB</h1>
-            <div class="status-container">
-                <div id="status-dot" class="status-dot"></div>
-                <div id="status-text" class="status-text">Detecting Partner...</div>
-            </div>
+    <div class="game-container">
+        <h1>J-CORE POOL</h1>
+        <div id="turn-display" class="turn-indicator">Syncing...</div>
+
+        <div class="pool-table">
+            <div class="pocket tl"></div><div class="pocket tr"></div>
+            <div class="pocket tc"></div><div class="pocket bc"></div>
+            <div class="pocket bl"></div><div class="pocket br"></div>
+            
+            <div id="cue-ball" class="ball cue-ball"></div>
+            <div id="eight-ball" class="ball eight-ball">8</div>
         </div>
 
-        <div class="chat-area">
-            <div class="bubble">Welcome back, Boss! 🎱</div>
-            <div class="bubble" style="background: #009688;">Maheen's cue is waiting... 😜</div>
-        </div>
+        <div class="power-bar"><div id="power-fill"></div></div>
 
-        <div class="game-menu">
-            <div class="pool-card" onclick="alert('Pool Game Loading...')">
-                <span style="font-weight: 900; text-shadow: 0 2px 10px #000; font-size: 1.2rem;">8-BALL POOL 🎱</span>
-            </div>
-        </div>
+        <button id="shotBtn" class="btn-shot" onclick="takeShot()">Take Shot 🎱</button>
+        <p style="font-size: 10px; margin-top: 15px; color: #888;">PASS & PLAY MODE ACTIVE</p>
     </div>
 
     <script>
@@ -87,48 +88,76 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
-        let myEmail = "";
-        const partnerEmail = "333shahan@gmail.com"; 
+        let partnerEmail = "333shahan@gmail.com"; 
 
         function login() {
             const e = document.getElementById('email').value;
             const p = document.getElementById('pass').value;
-            auth.signInWithEmailAndPassword(e, p).then((user) => {
-                myEmail = user.user.email;
+            auth.signInWithEmailAndPassword(e, p).then(() => {
                 document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('main-hub').style.display = 'flex';
-                setupPresence();
+                syncTable();
             }).catch(a => alert(a.message));
         }
 
-        // --- THE ONLINE DETECTION SYSTEM ---
-        function setupPresence() {
-            const myStatusRef = db.ref('/status/' + myEmail.replace(/\./g, '_'));
-            const partnerStatusRef = db.ref('/status/' + partnerEmail.replace(/\./g, '_'));
+        function syncTable() {
+            db.ref('pool_match').on('value', (snap) => {
+                const data = snap.val();
+                if(!data) {
+                    // Initialize if empty
+                    db.ref('pool_match').set({ cueX: 50, cueY: 80, eightX: 220, eightY: 80, nextTurn: auth.currentUser.email });
+                    return;
+                }
 
-            // Set my status to online when connected, offline when I leave
-            db.ref('.info/connected').on('value', (snapshot) => {
-                if (snapshot.val() === false) return;
-                myStatusRef.onDisconnect().set('offline').then(() => {
-                    myStatusRef.set('online');
-                });
-            });
+                // Move balls
+                document.getElementById('cue-ball').style.left = data.cueX + 'px';
+                document.getElementById('cue-ball').style.top = data.cueY + 'px';
+                document.getElementById('eight-ball').style.left = data.eightX + 'px';
+                document.getElementById('eight-ball').style.top = data.eightY + 'px';
 
-            // Listen for Partner's status
-            partnerStatusRef.on('value', (snapshot) => {
-                const status = snapshot.val();
-                const dot = document.getElementById('status-dot');
-                const text = document.getElementById('status-text');
-                
-                if (status === 'online') {
-                    dot.classList.add('online');
-                    text.innerText = "MAHEEN IS ONLINE 💖";
+                const btn = document.getElementById('shotBtn');
+                const turnTxt = document.getElementById('turn-display');
+
+                if(data.nextTurn !== auth.currentUser.email) {
+                    btn.disabled = true;
+                    btn.innerText = "Waiting...";
+                    turnTxt.innerText = "MAHEEN'S TURN 💖";
+                    turnTxt.style.color = "#ff00a0";
                 } else {
-                    dot.classList.remove('online');
-                    text.innerText = "MAHEEN IS AWAY 🌙";
+                    btn.disabled = false;
+                    btn.innerText = "TAKE YOUR SHOT 🎱";
+                    turnTxt.innerText = "YOUR TURN 🔥";
+                    turnTxt.style.color = "#00ffcc";
                 }
             });
         }
+
+        function takeShot() {
+            const btn = document.getElementById('shotBtn');
+            btn.disabled = true; // INSTANT LOCK
+
+            // Simulating a shot - generating new positions
+            const newCueX = Math.floor(Math.random() * 250) + 20;
+            const newCueY = Math.floor(Math.random() * 120) + 20;
+            const newEightX = Math.floor(Math.random() * 250) + 20;
+            const newEightY = Math.floor(Math.random() * 120) + 20;
+
+            db.ref('pool_match').update({
+                cueX: newCueX,
+                cueY: newCueY,
+                eightX: newEightX,
+                eightY: newEightY,
+                nextTurn: (auth.currentUser.email === partnerEmail) ? "your_email_here@gmail.com" : partnerEmail
+            });
+        }
+
+        // Floating Hearts
+        setInterval(() => {
+            const h = document.createElement('div');
+            h.innerHTML = '💖'; h.className = 'bg-heart';
+            h.style.left = Math.random() * 100 + 'vw';
+            document.body.appendChild(h);
+            setTimeout(() => h.remove(), 5000);
+        }, 1000);
     </script>
 </body>
 </html>
