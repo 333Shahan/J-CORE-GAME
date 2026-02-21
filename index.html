@@ -3,61 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>J-CORE | Real Ludo</title>
+    <title>J-CORE | Romantic Arena</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
-        body { background: #050010; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow-x: hidden; }
         
-        /* Board Design */
-        .ludo-container { position: relative; width: 360px; height: 360px; background: #fff; display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr); border: 5px solid #fff; box-shadow: 0 0 30px #ff00a0; margin-top: 20px; }
-        .cell { border: 0.1px solid rgba(0,0,0,0.1); }
-        
-        /* Homes */
-        .home { grid-column: span 6; grid-row: span 6; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
-        .red { background: #ff4d4d; } .blue { background: #4d94ff; } 
-        .green { background: #66ff66; } .yellow { background: #ffff66; }
-        
-        /* Paths & Center */
-        .center { grid-column: span 3; grid-row: span 3; background: #333; display: flex; align-items: center; justify-content: center; color: #ff00a0; font-size: 1.5rem; }
-        
-        /* UI Elements */
-        .controls { margin-top: 20px; text-align: center; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 20px; border: 2px solid #00ffcc; width: 80%; max-width: 300px; }
-        #dice-display { font-size: 3rem; margin-bottom: 10px; display: block; }
-        button { background: linear-gradient(45deg, #ff0055, #ff00a0); color: #fff; border: none; padding: 12px 25px; border-radius: 10px; font-weight: 900; cursor: pointer; text-transform: uppercase; width: 100%; }
-        .more-soon { margin-top: 15px; font-size: 0.6rem; color: #00ffcc; border: 1px solid #00ffcc; padding: 5px 10px; border-radius: 10px; animation: glow 2s infinite; }
-        @keyframes glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        body { background: #050010; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
 
-        #login-screen { position: fixed; inset: 0; background: #050010; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input { width: 250px; padding: 12px; margin: 10px; border-radius: 8px; border: none; text-align: center; }
+        /* Neon Background Elements */
+        .bg-glow { position: fixed; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,0,160,0.2) 0%, transparent 70%); z-index: -1; filter: blur(50px); }
+        .heart { position: absolute; color: #ff00a0; opacity: 0.3; animation: floatUp 6s infinite linear; pointer-events: none; }
+        @keyframes floatUp { 0% { transform: translateY(110vh) scale(0.5); opacity: 0; } 50% { opacity: 0.6; } 100% { transform: translateY(-10vh) scale(1.2); opacity: 0; } }
+
+        /* The Hub Card */
+        .main-container { width: 90%; max-width: 420px; background: rgba(10, 0, 20, 0.9); border: 3px solid transparent; border-image: linear-gradient(45deg, #00ffcc, #ff00a0) 1; border-radius: 20px; padding: 20px; text-align: center; box-shadow: 0 0 30px rgba(255, 0, 160, 0.4); z-index: 10; }
+        
+        h1 { font-size: 2.2rem; background: linear-gradient(to right, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 5px 0; }
+        .subtitle { font-size: 0.6rem; letter-spacing: 2px; color: #00ffcc; margin-bottom: 20px; }
+
+        /* RGB Ludo Board Overlay */
+        .ludo-frame { position: relative; width: 300px; height: 300px; margin: 0 auto; border: 4px solid #fff; box-shadow: 0 0 20px #ff00a0, inset 0 0 15px #00ffcc; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); background: #111; }
+        .zone { border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; position: relative; }
+        .zone-m { background: rgba(255, 0, 160, 0.3); color: #ff00a0; text-shadow: 0 0 10px #ff00a0; }
+        .zone-j { background: rgba(0, 255, 204, 0.3); color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
+        .center-heart { font-size: 2rem; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+
+        /* Controls */
+        .dice-area { margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
+        #dice-val { font-size: 3.5rem; display: block; margin-bottom: 10px; text-shadow: 0 0 15px #ff00a0; }
+        button { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: white; padding: 15px 30px; border-radius: 50px; font-weight: 900; box-shadow: 0 5px 15px rgba(255,0,160,0.4); cursor: pointer; width: 80%; }
+        
+        /* The requested "More Games" button */
+        .more-games { margin-top: 20px; display: inline-block; padding: 8px 20px; border: 1px solid #00ffcc; color: #00ffcc; font-size: 0.7rem; border-radius: 20px; text-transform: uppercase; animation: glow 2s infinite; }
+        @keyframes glow { 0%, 100% { box-shadow: 0 0 5px #00ffcc; } 50% { box-shadow: 0 0 15px #00ffcc; } }
+
+        #login-overlay { position: fixed; inset: 0; background: #050010; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        input { background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 15px; width: 250px; margin: 10px; border-radius: 10px; text-align: center; }
     </style>
 </head>
 <body>
+    <div class="bg-glow" style="top:10%; left:10%;"></div>
+    <div class="bg-glow" style="bottom:10%; right:10%;"></div>
 
-    <div id="login-screen">
-        <h1 style="text-shadow: 0 0 10px #ff00a0;">J-CORE</h1>
-        <input type="email" id="email" placeholder="EMAIL">
-        <input type="password" id="pass" placeholder="PASSWORD">
-        <button style="width: 275px;" onclick="login()">ENTER THE ARENA 🎲</button>
+    <div id="login-overlay">
+        <h1>J-CORE</h1>
+        <p class="subtitle">ENCRYPTED LOVE ACCESS</p>
+        <input type="email" id="email" placeholder="IDENTITY (EMAIL)">
+        <input type="password" id="pass" placeholder="KEY (PASSWORD)">
+        <button onclick="login()">ACTIVATE PROTOCOL 🚀</button>
     </div>
 
-    <h2 style="margin-top: 10px; text-shadow: 0 0 5px #00ffcc;">J-CORE LUDO</h2>
-    
-    <div class="ludo-container">
-        <div class="home red" style="grid-area: 1 / 1 / 7 / 7;">❤</div>
-        <div class="home green" style="grid-area: 1 / 10 / 7 / 16;">🍀</div>
-        <div class="home yellow" style="grid-area: 10 / 1 / 16 / 7;">⭐</div>
-        <div class="home blue" style="grid-area: 10 / 10 / 16 / 16;">💎</div>
+    <div class="main-container">
+        <h1>J-CORE</h1>
+        <p class="subtitle">OFFICIAL ROMANCE ARENA</p>
         
-        <div class="center" style="grid-area: 7 / 7 / 10 / 10;">J+M</div>
-    </div>
+        <div class="ludo-frame">
+            <div class="zone zone-j">J</div><div class="zone">🎲</div><div class="zone zone-m">M</div>
+            <div class="zone">✨</div><div class="zone center-heart">💖</div><div class="zone">✨</div>
+            <div class="zone zone-m">M</div><div class="zone">🎲</div><div class="zone zone-j">J</div>
+        </div>
 
-    <div class="controls">
-        <span id="dice-display">🎲</span>
-        <button onclick="rollDice()">ROLL FOR LOVE</button>
-        <div class="more-soon">MORE GAMES SOON... 🔒</div>
+        <div class="dice-area">
+            <span id="dice-val">🎲</span>
+            <button onclick="rollDice()">ROLL FOR LOVE</button>
+        </div>
+
+        <div class="more-games">MORE GAMES SOON... 🔒</div>
     </div>
 
     <script>
@@ -76,15 +90,15 @@
             const e = document.getElementById('email').value;
             const p = document.getElementById('pass').value;
             firebase.auth().signInWithEmailAndPassword(e, p).then(() => {
-                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('login-overlay').style.display = 'none';
                 syncDice();
-            }).catch(a => alert(a.message));
+            }).catch(a => alert("ACCESS DENIED: " + a.message));
         }
 
         function syncDice() {
             firebase.database().ref('ludo/dice').on('value', s => {
                 const v = s.val();
-                if(v) document.getElementById('dice-display').innerText = ['⚀','⚁','⚂','⚃','⚄','⚅'][v-1];
+                if(v) document.getElementById('dice-val').innerText = ['⚀','⚁','⚂','⚃','⚄','⚅'][v-1];
             });
         }
 
@@ -92,6 +106,16 @@
             const r = Math.floor(Math.random() * 6) + 1;
             firebase.database().ref('ludo').update({ dice: r });
         }
+
+        // Add floating hearts
+        setInterval(() => {
+            const h = document.createElement('div');
+            h.innerHTML = '💖'; h.className = 'heart';
+            h.style.left = Math.random() * 100 + 'vw';
+            h.style.animationDuration = (Math.random() * 3 + 3) + 's';
+            document.body.appendChild(h);
+            setTimeout(() => h.remove(), 6000);
+        }, 500);
     </script>
 </body>
 </html>
