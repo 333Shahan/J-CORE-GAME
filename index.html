@@ -3,63 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>J-CORE | Heart Goal</title>
+    <title>J-CORE | Multiplayer Pong</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
+        
         body { background: #050010; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+
+        /* --- RGB LOGIN --- */
+        #login-screen { position: fixed; inset: 0; background: #050010; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .login-box { text-align: center; padding: 40px; border: 3px solid; border-image: linear-gradient(45deg, #00ffcc, #ff00a0) 1; background: rgba(0,0,0,0.8); border-radius: 20px; box-shadow: 0 0 30px rgba(0,255,204,0.3); }
+        h1 { font-size: 2.5rem; margin: 0; background: linear-gradient(to right, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .game-box { width: 320px; height: 400px; background: rgba(255, 255, 255, 0.05); border: 2px solid #ff00a0; border-radius: 20px; position: relative; overflow: hidden; box-shadow: 0 0 30px #ff00a055; }
-        .goal { width: 150px; height: 60px; border: 4px dashed #00ffcc; border-bottom: none; margin: 20px auto; position: relative; }
+        /* --- WAITING ROOM --- */
+        #waiting-room { display: none; text-align: center; }
+        .heart-pulse { font-size: 50px; animation: pulse 1s infinite; margin: 20px; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        /* --- PONG ARENA --- */
+        #game-screen { display: none; text-align: center; }
+        canvas { background: #000; border: 2px solid #ff00a0; border-radius: 10px; box-shadow: 0 0 20px #ff00a0; touch-action: none; }
         
-        #goalie { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 30px; transition: 0.3s; }
-        #heart { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); font-size: 40px; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        
-        .controls { margin-top: 30px; text-align: center; }
-        .btn { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: white; padding: 15px 40px; border-radius: 50px; font-weight: 900; cursor: pointer; box-shadow: 0 5px 15px rgba(255,0,160,0.4); }
-        .score { font-size: 1.2rem; margin-bottom: 10px; color: #00ffcc; }
+        .btn { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: white; padding: 15px 40px; border-radius: 50px; font-weight: 900; cursor: pointer; margin-top: 20px; }
+        input { background: #111; border: 1px solid #333; color: #fff; padding: 12px; margin: 10px 0; width: 200px; border-radius: 10px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <h1 style="background: linear-gradient(to right, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px;">J-CORE LOVE</h1>
-    <div class="score">Maheen 0 - 0 Johan</div>
-
-    <div class="game-box">
-        <div class="goal">
-            <div id="goalie">🧤</div>
+    <div id="login-screen">
+        <div class="login-box">
+            <h1>J-CORE</h1>
+            <p style="font-size: 10px; letter-spacing: 3px; color: #00ffcc;">OFFICIAL ROMANCE ARENA</p>
+            <input type="text" id="username" placeholder="NAME">
+            <button class="btn" onclick="joinArena()">LOGIN</button>
         </div>
-        <div id="heart">💖</div>
     </div>
 
-    <div class="controls">
-        <button class="btn" onclick="shoot()">SHOOT FOR LOVE! 💘</button>
-        <p style="font-size: 10px; color: #888; margin-top: 15px;">PASS THE PHONE TO PLAY</p>
+    <div id="waiting-room">
+        <h1>WAITING...</h1>
+        <div class="heart-pulse">💖</div>
+        <p id="wait-msg">Waiting for your partner to join the Arena...</p>
+    </div>
+
+    <div id="game-screen">
+        <div style="margin-bottom: 10px; color: #00ffcc;">JOHAN vs MAHEEN</div>
+        <canvas id="pongCanvas"></canvas>
     </div>
 
     <script>
-        function shoot() {
-            const heart = document.getElementById('heart');
-            const goalie = document.getElementById('goalie');
-            
-            // Random Goalie Move
-            const move = (Math.random() - 0.5) * 120;
-            goalie.style.left = `calc(50% + ${move}px)`;
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZwCbtIVf4BwXRWuFkkOEPw_Kt3TQGIWc",
+            databaseURL: "https://j-core-8eb11-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const presenceRef = db.ref("arena_presence");
 
-            // Heart Shoot
-            const aim = (Math.random() - 0.5) * 150;
-            heart.style.bottom = "320px";
-            heart.style.left = `calc(50% + ${aim}px)`;
+        function joinArena() {
+            const user = document.getElementById("username").value;
+            if(!user) return alert("Enter Name!");
 
-            setTimeout(() => {
-                if (Math.abs(move - aim) < 40) {
-                    alert("SAVED! Maheen blocked your love! 🧤😜");
-                } else {
-                    alert("GOAL! You scored a kiss! 💋💖");
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("waiting-room").style.display = "block";
+
+            // Add user to presence list
+            const myPresence = presenceRef.push(user);
+            myPresence.onDisconnect().remove();
+
+            // Listen for 2 users
+            presenceRef.on("value", (snap) => {
+                const count = snap.numChildren();
+                if(count >= 2) {
+                    startGame();
                 }
-                // Reset
-                heart.style.bottom = "40px";
-                heart.style.left = "50%";
-            }, 600);
+            });
+        }
+
+        function startGame() {
+            document.getElementById("waiting-room").style.display = "none";
+            document.getElementById("game-screen").style.display = "block";
+            initPong();
+        }
+
+        function initPong() {
+            const canvas = document.getElementById("pongCanvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = 300; canvas.height = 400;
+
+            let ballX = 150, ballY = 200, dx = 2, dy = 2;
+            let paddleX = 115;
+
+            canvas.addEventListener("mousemove", (e) => {
+                const rect = canvas.getBoundingClientRect();
+                paddleX = (e.clientX - rect.left) - 35;
+            });
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Ball
+                ctx.font = "20px Arial";
+                ctx.fillText("💖", ballX - 10, ballY + 10);
+                
+                // Bottom Paddle
+                ctx.fillStyle = "#00ffcc";
+                ctx.fillRect(paddleX, canvas.height - 15, 70, 10);
+
+                ballX += dx; ballY += dy;
+                if(ballX < 0 || ballX > canvas.width) dx = -dx;
+                if(ballY < 0) dy = -dy;
+                if(ballY > canvas.height - 25 && ballX > paddleX && ballX < paddleX + 70) dy = -dy;
+                if(ballY > canvas.height) { ballX = 150; ballY = 200; }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
         }
     </script>
 </body>
