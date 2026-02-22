@@ -3,143 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>J-CORE | Pro 8-Ball</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <title>J-CORE | Heart Goal</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
-        body { background: #050010; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; touch-action: none; }
+        body { background: #050010; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
         
-        .header { text-align: center; margin-bottom: 10px; z-index: 10; }
-        .header h1 { margin: 0; font-size: 1.2rem; background: linear-gradient(45deg, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-        #container { position: relative; border: 12px solid #3d2b1f; border-radius: 15px; box-shadow: 0 20px 50px #000; width: 360px; height: 180px; background: #006030; }
-        canvas { position: absolute; top: 0; left: 0; border-radius: 5px; }
-
-        /* The Cue Stick */
-        #cue-stick {
-            position: absolute;
-            width: 200px;
-            height: 6px;
-            background: linear-gradient(to right, #3d2b1f 0%, #f4a460 80%, #fff 100%);
-            transform-origin: left center;
-            pointer-events: none;
-            display: none;
-            z-index: 20;
-            border-radius: 3px;
-            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
-        }
-
-        .ui { margin-top: 15px; text-align: center; font-size: 10px; color: #00ffcc; letter-spacing: 1px; }
+        .game-box { width: 320px; height: 400px; background: rgba(255, 255, 255, 0.05); border: 2px solid #ff00a0; border-radius: 20px; position: relative; overflow: hidden; box-shadow: 0 0 30px #ff00a055; }
+        .goal { width: 150px; height: 60px; border: 4px dashed #00ffcc; border-bottom: none; margin: 20px auto; position: relative; }
+        
+        #goalie { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 30px; transition: 0.3s; }
+        #heart { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); font-size: 40px; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        .controls { margin-top: 30px; text-align: center; }
+        .btn { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: white; padding: 15px 40px; border-radius: 50px; font-weight: 900; cursor: pointer; box-shadow: 0 5px 15px rgba(255,0,160,0.4); }
+        .score { font-size: 1.2rem; margin-bottom: 10px; color: #00ffcc; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>J-CORE PRO ARENA</h1>
+    <h1 style="background: linear-gradient(to right, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px;">J-CORE LOVE</h1>
+    <div class="score">Maheen 0 - 0 Johan</div>
+
+    <div class="game-box">
+        <div class="goal">
+            <div id="goalie">🧤</div>
+        </div>
+        <div id="heart">💖</div>
     </div>
 
-    <div id="container">
-        <canvas id="poolCanvas"></canvas>
-        <div id="cue-stick"></div>
-    </div>
-
-    <div class="ui">
-        DRAG AROUND BALL TO AIM • PULL BACK TO POWER UP<br>
-        <span style="color: #ff00a0;">MAHEEN VS JOHAN 💖</span>
+    <div class="controls">
+        <button class="btn" onclick="shoot()">SHOOT FOR LOVE! 💘</button>
+        <p style="font-size: 10px; color: #888; margin-top: 15px;">PASS THE PHONE TO PLAY</p>
     </div>
 
     <script>
-        const { Engine, Render, Runner, World, Bodies, Body, Vector, Events } = Matter;
-        const engine = Engine.create();
-        engine.world.gravity.y = 0;
-
-        const canvas = document.getElementById('poolCanvas');
-        const ctx = canvas.getContext('2d');
-        const stick = document.getElementById('cue-stick');
-        const width = 360; const height = 180;
-        canvas.width = width; canvas.height = height;
-
-        // Table Walls
-        const wallOpt = { isStatic: true, render: { visible: false } };
-        World.add(engine.world, [
-            Bodies.rectangle(width/2, -10, width, 20, wallOpt),
-            Bodies.rectangle(width/2, height+10, width, 20, wallOpt),
-            Bodies.rectangle(-10, height/2, 20, height, wallOpt),
-            Bodies.rectangle(width+10, height/2, 20, height, wallOpt)
-        ]);
-
-        // Balls
-        const balls = [];
-        const cueBall = Bodies.circle(100, height/2, 8, { restitution: 0.9, frictionAir: 0.015, render: { fillStyle: '#fff' } });
-        balls.push(cueBall);
-
-        // Simple Rack
-        for(let i=0; i<3; i++) {
-            for(let j=0; j<=i; j++) {
-                balls.push(Bodies.circle(240 + (i*15), (height/2 - (i*8)) + (j*16), 8, { 
-                    restitution: 0.9, frictionAir: 0.015, 
-                    render: { fillStyle: (i+j)%2==0 ? '#ffcc00' : '#b22222' } 
-                }));
-            }
-        }
-        World.add(engine.world, balls);
-
-        let isAiming = false;
-        let angle = 0;
-        let power = 0;
-
-        window.addEventListener('mousedown', (e) => { isAiming = true; });
-        window.addEventListener('mouseup', (e) => {
-            if(isAiming && power > 5) {
-                const force = { x: Math.cos(angle) * power * 0.0005, y: Math.sin(angle) * power * 0.0005 };
-                Body.applyForce(cueBall, cueBall.position, force);
-            }
-            isAiming = false;
-            power = 0;
-            stick.style.display = 'none';
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            if(!isAiming) return;
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-
-            angle = Math.atan2(cueBall.position.y - mouseY, cueBall.position.x - mouseX);
-            const dist = Vector.magnitude(Vector.sub(cueBall.position, {x: mouseX, y: mouseY}));
-            power = Math.min(dist, 150); // Max power cap
-
-            // Update Stick
-            stick.style.display = 'block';
-            stick.style.left = cueBall.position.x + 'px';
-            stick.style.top = cueBall.position.y + 'px';
-            stick.style.transform = `rotate(${angle}rad) translate(${-(power + 20)}px, -3px)`;
-        });
-
-        // Animation Loop
-        (function update() {
-            Engine.update(engine);
-            ctx.clearRect(0, 0, width, height);
+        function shoot() {
+            const heart = document.getElementById('heart');
+            const goalie = document.getElementById('goalie');
             
-            // Draw Guideline
-            if(isAiming) {
-                ctx.beginPath();
-                ctx.setLineDash([5, 5]);
-                ctx.moveTo(cueBall.position.x, cueBall.position.y);
-                ctx.lineTo(cueBall.position.x + Math.cos(angle) * 100, cueBall.position.y + Math.sin(angle) * 100);
-                ctx.strokeStyle = "rgba(255,255,255,0.3)";
-                ctx.stroke();
-            }
+            // Random Goalie Move
+            const move = (Math.random() - 0.5) * 120;
+            goalie.style.left = `calc(50% + ${move}px)`;
 
-            balls.forEach(b => {
-                ctx.beginPath();
-                ctx.arc(b.position.x, b.position.y, 8, 0, Math.PI*2);
-                ctx.fillStyle = b.render.fillStyle;
-                ctx.fill();
-                ctx.closePath();
-            });
-            requestAnimationFrame(update);
-        })();
+            // Heart Shoot
+            const aim = (Math.random() - 0.5) * 150;
+            heart.style.bottom = "320px";
+            heart.style.left = `calc(50% + ${aim}px)`;
+
+            setTimeout(() => {
+                if (Math.abs(move - aim) < 40) {
+                    alert("SAVED! Maheen blocked your love! 🧤😜");
+                } else {
+                    alert("GOAL! You scored a kiss! 💋💖");
+                }
+                // Reset
+                heart.style.bottom = "40px";
+                heart.style.left = "50%";
+            }, 600);
+        }
     </script>
 </body>
 </html>
