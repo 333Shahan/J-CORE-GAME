@@ -11,9 +11,7 @@
         
         body { margin: 0; padding: 0; background: radial-gradient(circle at center, #1a0033 0%, #050010 100%); color: #fff; font-family: 'Montserrat', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
-        /* --- THE MASTERPIECE UI --- */
         #ui-layer { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(5,0,16,0.7); backdrop-filter: blur(8px); transition: 1s ease-in-out; }
-        
         .panel { text-align: center; padding: 40px; background: rgba(0,0,0,0.6); border: 2px solid #ff00a0; border-radius: 25px; box-shadow: 0 0 50px rgba(255,0,160,0.4), inset 0 0 20px rgba(0,255,204,0.2); backdrop-filter: blur(10px); }
         h1 { font-size: 3rem; margin: 0; background: linear-gradient(45deg, #00ffcc, #ff00a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 15px rgba(255,0,160,0.8)); text-transform: uppercase; letter-spacing: 2px; }
         
@@ -23,7 +21,6 @@
         .btn { background: linear-gradient(45deg, #ff0055, #ff00a0); border: none; color: white; padding: 15px 50px; border-radius: 50px; font-size: 1.2rem; font-weight: 900; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 30px rgba(255,0,160,0.5); }
         .btn:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(255,0,160,0.7); }
 
-        /* --- GAME CANVAS --- */
         #game-container { position: relative; display: flex; flex-direction: column; align-items: center; }
         .scoreboard { display: flex; justify-content: space-between; width: 100%; max-width: 400px; padding: 10px 20px; box-sizing: border-box; font-size: 1.5rem; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px #00ffcc; margin-bottom: 10px; }
         .score-m { color: #ff00a0; text-shadow: 0 0 10px #ff00a0; }
@@ -46,7 +43,6 @@
             <h1 style="font-size: 2rem;">WAITING...</h1>
             <div style="font-size: 50px; margin: 20px; animation: pulse 1s infinite;">💖</div>
             <p id="wait-msg" style="color: #00ffcc; letter-spacing: 2px;">Waiting for your partner...</p>
-            <p style="font-size: 10px; color: #888; margin-top: 15px;">Enjoy the background view while you wait!</p>
         </div>
     </div>
 
@@ -59,9 +55,7 @@
     </div>
 
     <script>
-        // --- AUDIO SYSTEM (Web Audio API for perfect sync) ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
         function playTone(freq, type, duration) {
             if(audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
@@ -72,16 +66,13 @@
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
-        
         function playHit() { playTone(600, 'sine', 0.1); }
         function playWallHit() { playTone(400, 'square', 0.1); }
         function playScore() { playTone(800, 'triangle', 0.3); setTimeout(() => playTone(1200, 'triangle', 0.4), 150); }
 
-        // Background Music (LoFi/Chill public domain track)
         const bgm = new Audio('https://actions.google.com/sounds/v1/water/waves_crashing_on_rock_beach.ogg');
         bgm.loop = true; bgm.volume = 0.3;
 
-        // --- FIREBASE SETUP ---
         const firebaseConfig = {
             apiKey: "AIzaSyAZwCbtIVf4BwXRWuFkkOEPw_Kt3TQGIWc",
             databaseURL: "https://j-core-8eb11-default-rtdb.firebaseio.com/"
@@ -90,71 +81,65 @@
         const db = firebase.database();
         const roomRef = db.ref("jcore_pong");
 
-        // --- GAME VARIABLES ---
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-        let gameState = "demo"; // 'demo' or 'playing'
-        let myRole = null; // 'p1' (bottom/Johan) or 'p2' (top/Maheen)
+        let gameState = "demo"; 
+        let myRole = null; 
         
         const paddle = { w: 80, h: 12 };
-        let p1 = { x: 140, score: 0 }; // Bottom
-        let p2 = { x: 140, score: 0 }; // Top
+        let p1 = { x: 140, score: 0 }; 
+        let p2 = { x: 140, score: 0 }; 
         let ball = { x: 180, y: 250, dx: 4, dy: -4, size: 15 };
 
-        // --- INPUT HANDLING ---
-        canvas.addEventListener('touchmove', e => {
-            e.preventDefault();
+        let lastPaddleSync = 0;
+        let lastBallSync = 0;
+
+        function updatePaddlePosition(clientX) {
             if(gameState !== "playing") return;
             const rect = canvas.getBoundingClientRect();
-            const touchX = e.touches[0].clientX - rect.left;
-            let newX = touchX - paddle.w/2;
-            if(myRole === 'p1') { p1.x = newX; roomRef.child('p1x').set(p1.x); }
-            if(myRole === 'p2') { p2.x = newX; roomRef.child('p2x').set(p2.x); }
-        }, {passive: false});
+            let newX = (clientX - rect.left) - paddle.w/2;
+            
+            // Keep paddle inside screen
+            if (newX < 0) newX = 0;
+            if (newX > canvas.width - paddle.w) newX = canvas.width - paddle.w;
 
-        canvas.addEventListener('mousemove', e => {
-            if(gameState !== "playing") return;
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            let newX = mouseX - paddle.w/2;
-            if(myRole === 'p1') { p1.x = newX; roomRef.child('p1x').set(p1.x); }
-            if(myRole === 'p2') { p2.x = newX; roomRef.child('p2x').set(p2.x); }
-        });
+            if(myRole === 'p1') p1.x = newX;
+            if(myRole === 'p2') p2.x = newX;
 
-        // --- LOGIN & SYNC LOGIC ---
+            // NETWORK THROTTLE: Only send paddle data every 30ms to stop glitching
+            let now = Date.now();
+            if (now - lastPaddleSync > 30) {
+                if(myRole === 'p1') roomRef.child('p1x').set(p1.x);
+                if(myRole === 'p2') roomRef.child('p2x').set(p2.x);
+                lastPaddleSync = now;
+            }
+        }
+
+        canvas.addEventListener('touchmove', e => { e.preventDefault(); updatePaddlePosition(e.touches[0].clientX); }, {passive: false});
+        canvas.addEventListener('mousemove', e => { updatePaddlePosition(e.clientX); });
+
         function joinArena() {
             const user = document.getElementById("username").value.toUpperCase();
             if(!user) return;
             
-            // Start Audio
             if(audioCtx.state === 'suspended') audioCtx.resume();
-            bgm.play().catch(e => console.log("Audio play blocked until interaction"));
+            bgm.play().catch(e => console.log("Audio blocked"));
 
             document.getElementById("login-panel").style.display = "none";
             document.getElementById("waiting-panel").style.display = "block";
 
-            // Determine Role
             roomRef.child('players').once('value', snap => {
                 const count = snap.numChildren();
-                if(count === 0) {
-                    myRole = 'p1';
-                    const ref = roomRef.child('players').push(user);
-                    ref.onDisconnect().remove();
-                } else {
-                    myRole = 'p2';
-                    const ref = roomRef.child('players').push(user);
-                    ref.onDisconnect().remove();
-                }
+                myRole = (count === 0) ? 'p1' : 'p2';
+                const ref = roomRef.child('players').push(user);
+                ref.onDisconnect().remove();
             });
 
-            // Listen for Game Start
             roomRef.child('players').on('value', snap => {
                 if(snap.numChildren() >= 2) {
                     document.getElementById("ui-layer").style.opacity = "0";
                     setTimeout(() => document.getElementById("ui-layer").style.display = "none", 1000);
                     gameState = "playing";
-                    
-                    // Host resets ball
                     if(myRole === 'p1') resetBall(); 
                 } else {
                     document.getElementById("ui-layer").style.display = "flex";
@@ -163,23 +148,24 @@
                 }
             });
 
-            // Sync Opponent & Ball
             roomRef.on('value', snap => {
                 const data = snap.val();
                 if(!data) return;
                 
-                if(myRole === 'p1' && data.p2x) p2.x = data.p2x;
-                if(myRole === 'p2' && data.p1x) p1.x = data.p1x;
+                if(myRole === 'p1' && data.p2x !== undefined) p2.x = data.p2x;
+                if(myRole === 'p2' && data.p1x !== undefined) p1.x = data.p1x;
                 
-                // If I'm Player 2, I read the ball and scores from Player 1
-                if(myRole === 'p2') {
-                    if(data.ball) { ball.x = data.ball.x; ball.y = data.ball.y; }
-                    if(data.scores) { p1.score = data.scores.p1; p2.score = data.scores.p2; updateScores(); }
+                if(myRole === 'p2' && data.ball) { 
+                    // Smoothly interpolate ball to prevent jitter
+                    ball.x += (data.ball.x - ball.x) * 0.5; 
+                    ball.y += (data.ball.y - ball.y) * 0.5; 
+                }
+                if(myRole === 'p2' && data.scores) { 
+                    p1.score = data.scores.p1; p2.score = data.scores.p2; updateScores(); 
                 }
             });
         }
 
-        // --- CORE GAME ENGINE ---
         function resetBall() {
             ball.x = canvas.width/2; ball.y = canvas.height/2;
             ball.dy = (Math.random() > 0.5 ? 4 : -4);
@@ -194,58 +180,55 @@
         function drawGlowRect(x, y, w, h, color) {
             ctx.shadowBlur = 15; ctx.shadowColor = color;
             ctx.fillStyle = color; ctx.fillRect(x, y, w, h);
-            ctx.shadowBlur = 0; // Reset
+            ctx.shadowBlur = 0; 
         }
 
         function gameLoop() {
-            // Draw Background (Starry trail effect)
             ctx.fillStyle = "rgba(5, 0, 16, 0.3)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw Paddles
-            drawGlowRect(p2.x, 20, paddle.w, paddle.h, '#ff00a0'); // Maheen (Top)
-            drawGlowRect(p1.x, canvas.height - 32, paddle.w, paddle.h, '#00ffcc'); // Johan (Bottom)
+            drawGlowRect(p2.x, 20, paddle.w, paddle.h, '#ff00a0'); 
+            drawGlowRect(p1.x, canvas.height - 32, paddle.w, paddle.h, '#00ffcc'); 
 
-            // Draw Heart Ball
             ctx.shadowBlur = 20; ctx.shadowColor = "#ff00a0";
             ctx.font = ball.size * 2 + "px Arial";
             ctx.fillText("💖", ball.x - ball.size, ball.y + ball.size);
             ctx.shadowBlur = 0;
 
-            // Physics (Host controls the ball, Demo mode controls itself)
             if(myRole === 'p1' || gameState === 'demo') {
                 ball.x += ball.dx; ball.y += ball.dy;
 
-                // Wall Bounces
                 if(ball.x < 0 || ball.x > canvas.width) { ball.dx *= -1; playWallHit(); }
 
-                // Paddle Hits (Smooth angle deflection)
-                if(ball.y >= canvas.height - 40 && ball.x > p1.x - 10 && ball.x < p1.x + paddle.w + 10) {
-                    ball.dy = -Math.abs(ball.dy) - 0.2; // Speed up slightly!
-                    let hitPoint = ball.x - (p1.x + paddle.w/2);
-                    ball.dx = hitPoint * 0.15;
+                // ANTI-TRAP PHYSICS: Forces the ball strictly OUT of the paddle to stop glitches
+                if(ball.y >= canvas.height - 40 && ball.x > p1.x - 15 && ball.x < p1.x + paddle.w + 15) {
+                    ball.y = canvas.height - 42; // Pop it out safely
+                    ball.dy = -Math.abs(ball.dy) - 0.2; 
+                    ball.dx = (ball.x - (p1.x + paddle.w/2)) * 0.15;
                     playHit();
                 }
-                if(ball.y <= 40 && ball.x > p2.x - 10 && ball.x < p2.x + paddle.w + 10) {
+                if(ball.y <= 40 && ball.x > p2.x - 15 && ball.x < p2.x + paddle.w + 15) {
+                    ball.y = 42; // Pop it out safely
                     ball.dy = Math.abs(ball.dy) + 0.2;
-                    let hitPoint = ball.x - (p2.x + paddle.w/2);
-                    ball.dx = hitPoint * 0.15;
+                    ball.dx = (ball.x - (p2.x + paddle.w/2)) * 0.15;
                     playHit();
                 }
 
-                // Scoring
                 if(ball.y < 0) { p1.score++; playScore(); resetBall(); }
                 if(ball.y > canvas.height) { p2.score++; playScore(); resetBall(); }
 
-                // Sync Ball & Scores to P2 if playing
+                // NETWORK THROTTLE: Only update ball on Firebase ~25 times a second
                 if(gameState === 'playing' && myRole === 'p1') {
-                    roomRef.child('ball').set({x: ball.x, y: ball.y});
-                    roomRef.child('scores').set({p1: p1.score, p2: p2.score});
-                    updateScores();
+                    let now = Date.now();
+                    if(now - lastBallSync > 40) {
+                        roomRef.child('ball').set({x: ball.x, y: ball.y});
+                        roomRef.child('scores').set({p1: p1.score, p2: p2.score});
+                        updateScores();
+                        lastBallSync = now;
+                    }
                 }
             }
 
-            // Demo Mode AI
             if(gameState === 'demo') {
                 p1.x += (ball.x - (p1.x + paddle.w/2)) * 0.1;
                 p2.x += (ball.x - (p2.x + paddle.w/2)) * 0.1;
@@ -254,7 +237,6 @@
             requestAnimationFrame(gameLoop);
         }
         
-        // Start engine immediately for the background preview
         gameLoop();
     </script>
 </body>
